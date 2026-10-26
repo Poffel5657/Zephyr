@@ -1,7 +1,7 @@
 {
-  "grass": { "label": "Gras", "color": "#6aa84f" },
-  "dirt": { "label": "Erde", "color": "#9c7148" },
-  "stone": { "label": "Stein", "color": "#8a9097" },
-  "sand": { "label": "Sand", "color": "#d8c286" },
-  "water": { "label": "Wasser", "color": "#4a8fc6" }
+  "grass": { "label": "Gras", "color": "#6aa84f", "walkable": true },
+  "dirt": { "label": "Erde", "color": "#9c7148", "walkable": true },
+  "stone": { "label": "Stein", "color": "#8a9097", "walkable": true },
+  "sand": { "label": "Sand", "color": "#d8c286", "walkable": true },
+  "water": { "label": "Wasser", "color": "#4a8fc6", "walkable": false }
 }

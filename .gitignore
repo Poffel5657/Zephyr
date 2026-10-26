@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude / lokale KI
+.claude/
+.mcp.json
+CLAUDE.md

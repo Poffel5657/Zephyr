@@ -27,6 +27,7 @@ function buildTree(scene, position) {
 
   tree.position.copy(position);
   scene.add(tree);
+  return tree;
 }
 
 // Baut einen Platzhalter-Fels.
@@ -41,6 +42,7 @@ function buildRock(scene, position) {
   rock.castShadow = true;
   rock.receiveShadow = true;
   scene.add(rock);
+  return rock;
 }
 
 const OBJECT_BUILDERS = {
@@ -48,12 +50,12 @@ const OBJECT_BUILDERS = {
   rock: buildRock,
 };
 
-// Baut das Objekt mit diesem Namen an der Position (Warnung bei unbekanntem Namen).
+// Baut das Objekt mit diesem Namen und gibt es zurück (null + Warnung bei unbekanntem Namen).
 export function buildObject(scene, objectName, position) {
   const build = OBJECT_BUILDERS[objectName];
   if (build === undefined) {
     console.warn(`Unbekanntes Objekt: "${objectName}"`);
-    return;
+    return null;
   }
-  build(scene, position);
+  return build(scene, position);
 }

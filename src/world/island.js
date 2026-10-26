@@ -4,9 +4,10 @@ import { getTile, getGridSize, gridToWorld, STEP_HEIGHT } from "./grid.js";
 import { buildObject } from "./objects.js";
 import TILE_TYPES from "../data/tileTypes.json";
 
-// Geht durch alle Felder und fügt Säulen und Objekte zur Szene hinzu.
+// Fügt Säulen und Objekte zur Szene hinzu und gibt die Liste aller anklickbaren Teile zurück.
 export function buildIsland(scene) {
   const grid = getGridSize();
+  const clickables = [];
 
   for (let zRow = 0; zRow < grid.depth; zRow++) {
     for (let xTile = 0; xTile < grid.width; xTile++) {
@@ -22,11 +23,19 @@ export function buildIsland(scene) {
       column.position.set(xTile, columnHeight / 2, zRow);
       column.castShadow = true;
       column.receiveShadow = true;
+      column.userData.tile = { x: xTile, z: zRow };
       scene.add(column);
+      clickables.push(column);
 
       if (tile.object) {
-        buildObject(scene, tile.object, gridToWorld(xTile, zRow));
+        const object = buildObject(scene, tile.object, gridToWorld(xTile, zRow));
+        if (object !== null) {
+          object.userData.tile = { x: xTile, z: zRow };
+          clickables.push(object);
+        }
       }
     }
   }
+
+  return clickables;
 }

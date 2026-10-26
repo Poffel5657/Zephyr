@@ -33,8 +33,9 @@ What works right now:
 |---|---|---|
 | Rotate camera | Right or middle mouse + drag | 1 finger |
 | Zoom | Mouse wheel | 2 fingers |
+| Walk to a tile | Left click | Tap |
 
-The left mouse button is kept free for walking (coming in Phase 3).
+The tile under the mouse is highlighted (red if you can't walk there). The player finds the shortest way around trees, rocks and water.
 
 ---
 
@@ -45,7 +46,7 @@ The left mouse button is kept free for walking (coming in Phase 3).
 | 0 | Project setup: Vite, Three.js, GitHub Pages | ✅ |
 | 1 | Game loop and event bus | ✅ |
 | 2 | Grid and 3D island: map from JSON, light, camera | ✅ |
-| 3 | Player and click-to-walk (raycasting + A*) | |
+| 3 | Player and click-to-walk (raycasting + A*) | ✅ |
 | 4 | Inventory | |
 | 5 | Skill system + Woodcutting | |
 | 6 | Stats, character level and skill points | |
@@ -79,13 +80,15 @@ npm run dev     # start the dev server
 ```
 src/
 ├── main.js     entry point, connects all modules
-├── core/       game loop, event bus
-├── world/      grid, island, objects, lighting, camera
+├── core/       game loop, event bus, mouse input
+├── world/      grid, island, objects, lighting, camera, pathfinding (A*)
+├── player/     player and movement
+├── ui/         tile marker
 ├── editor/     map editor (dev tool, not part of the game)
 └── data/       maps and tile types as JSON
 ```
 
-More folders (player, skills, inventory, combat, ui) are ready for the coming phases.
+More folders (skills, inventory, combat) are ready for the coming phases.
 
 Every system lives in its own module, and modules talk through the event bus instead of calling each other directly. Content like maps and tile types is stored as JSON in `data/`, not in the code.
 

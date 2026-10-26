@@ -5,6 +5,10 @@ import { loadGrid } from "./grid.js";
 import { buildIsland } from "./island.js";
 import { setupLighting } from "./lighting.js";
 import { camera, setupCamera, resizeCamera } from "./camera.js";
+import { setupInput } from "../core/input.js";
+import { createPlayer } from "../player/player.js";
+import { createTileMarker } from "../ui/tileMarker.js";
+import { setupPlayerMovement } from "../player/movement.js";
 
 export const scene = new THREE.Scene();
 export const renderer = new THREE.WebGLRenderer();
@@ -14,8 +18,12 @@ document.body.appendChild(renderer.domElement);
 
 loadGrid(islandData);
 setupLighting(scene);
-buildIsland(scene);
+const player = createPlayer(scene, 6, 6);
+setupPlayerMovement(player);
+const clickables = buildIsland(scene);
 setupCamera(renderer.domElement);
+setupInput(camera, renderer.domElement, clickables);
+createTileMarker(scene);
 
 // Zeichnet ein Bild der Szene aus Sicht der Kamera.
 export function renderWorld() {

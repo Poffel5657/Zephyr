@@ -1,5 +1,6 @@
 // Das Raster der Welt: merkt sich die geladene Map und beantwortet Fragen zu ihren Feldern.
 import * as THREE from "three";
+import TILE_TYPES from "../data/tileTypes.json";
 
 export const TILE_SIZE = 1;
 export const STEP_HEIGHT = 0.5;
@@ -40,4 +41,13 @@ export function gridToWorld(x, z) {
   }
 
   return new THREE.Vector3(x * TILE_SIZE, tile.height * STEP_HEIGHT, z * TILE_SIZE);
+}
+
+// Prüft, ob man auf das Feld bei x / z laufen kann (kein Wasser, keine Luft, kein Objekt im Weg).
+export function isWalkable(x, z) {
+  const tile = getTile(x, z);
+  if (tile === null || tile.object) {
+    return false;
+  }
+  return TILE_TYPES[tile.type].walkable;
 }
