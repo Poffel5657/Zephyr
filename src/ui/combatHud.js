@@ -1,6 +1,7 @@
 // Zeigt die Kampf-Oberfläche: Zugreihenfolge, Runden-Aktionen, Kampf-Log und Gegner-Info.
 import "./ui.css";
 import ITEMS from "../data/items.json";
+import TECHNIQUES from "../data/techniques.json";
 import { on, emit } from "../core/eventBus.js";
 import { isPlayerTurn } from "../combat/combat.js";
 import { getMaxHp } from "../character/character.js";
@@ -9,7 +10,7 @@ const HIDDEN_CLASS = "combat-hidden";
 const LOG_HIDE_DELAY_MS = 4000;
 
 // Erstellt alle HUD-Elemente für den rundenbasierten Kampf und registriert Event-Listener.
-export function createCombatHud(player) {
+export function createCombatHud() {
   let inCombat = false;
   let currentOrder = [];
   let currentCombatant = null;
@@ -172,12 +173,30 @@ export function createCombatHud(player) {
     }
   });
 
+  // Einzelne Schläge: Bei eigenen Combos steht nur das Ausweichen hier, die Summe kommt mit "comboEnded"
   on("attackResolved", (data) => {
+    const attackName = data.technique === undefined ? "attack" : TECHNIQUES[data.technique].name;
     if (data.dodged) {
-      addLogMessage(`${data.target.name} dodges ${data.attacker.name}'s attack`);
+      addLogMessage(`${data.target.name} dodges ${data.attacker.name}'s ${attackName}`);
+    } else if (data.technique !== undefined) {
+      return;
+    } else if (data.block === "perfect") {
+      addLogMessage("Perfect block!");
+    } else if (data.block === "good") {
+      addLogMessage(`Blocked half: ${data.attacker.name} hits ${data.target.name} for ${data.damage}`);
     } else {
       addLogMessage(`${data.attacker.name} hits ${data.target.name} for ${data.damage}`);
     }
+  });
+
+  // Eigene Combo zusammengefasst, z. B. "Hero's Cleave: 3 hits, 16 damage"
+  on("comboEnded", (data) => {
+    if (data.dodged) {
+      return;
+    }
+    const total = data.hits.reduce((sum, damage) => sum + damage, 0);
+    const hitText = data.hits.length === 1 ? "1 hit" : `${data.hits.length} hits`;
+    addLogMessage(`${data.attacker.name}'s ${TECHNIQUES[data.technique].name}: ${hitText}, ${total} damage`);
   });
 
   on("itemEaten", (data) => {

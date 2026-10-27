@@ -3,6 +3,7 @@ import "./ui.css";
 import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { SLOT_COUNT, getSlots, clearSlot, moveSlot } from "../inventory/inventory.js";
+import { isFood } from "../items/food.js";
 
 const TOGGLE_KEY = "KeyI";
 const HIDDEN_CLASS = "inventory-hidden";
@@ -58,7 +59,7 @@ export function createInventoryPanel(inventory) {
     slotElements.forEach(({ slot }, i) => slot.classList.toggle(SELECTED_CLASS, i === selectedIndex));
     dropButton.disabled = selectedIndex === null;
     const selected = selectedIndex === null ? null : getSlots(inventory)[selectedIndex];
-    eatButton.hidden = selected === null || ITEMS[selected.item].heal === undefined;
+    eatButton.hidden = selected === null || !isFood(selected.item);
     showName(selectedIndex);
   };
 

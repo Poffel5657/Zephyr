@@ -1,5 +1,6 @@
 // Rundenbasierter Kampf direkt in der Welt: Start (Rechtsklick oder Aggro), Reihenfolge nach AGI,
-// Züge mit Bewegung + einer Aktion, Gegner-KI und das Ende (Sieg, Niederlage, Flucht).
+// Züge mit Bewegung + einer Aktion, Angriffe als Rhythmus-Combos (eigene) bzw. mit Block-Timing (Gegner),
+// Gegner-KI und das Ende (Sieg, Niederlage, Flucht).
 // Alles läuft über Events, damit UI, Speichern und Welt nur zuhören müssen.
 import CHARACTER_DATA from "../data/characters.json";
 import { emit, on } from "../core/eventBus.js";
@@ -10,6 +11,8 @@ import { getDamage, getDodgeChance, getMoveRange, takeDamage } from "../characte
 import { isMoving, walkPath, turnTowards } from "../player/movement.js";
 import { getEnemies, removeEnemy, resetEnemy, setEnemyMeshPosition, placeEnemy } from "../enemies/enemies.js";
 import { showMessage } from "../ui/messages.js";
+import { tickCooldowns, startCooldown, getCooldown, hasTechnique, getTechnique } from "./techniques.js";
+import { startRhythm, stopRhythm } from "./rhythm.js";
 
 const FLEE_DISTANCE = CHARACTER_DATA.combat.fleeDistance;
 // Pausen im Gegner-Zug (Sekunden), damit man sieht, was passiert
@@ -28,15 +31,18 @@ const waits = [];
 // Laufender Gegner-Schritt: { enemy, from, to, progress, resolve }
 let enemyStep = null;
 let aggroCooldown = 0;
+// Schaden nach Block-Ergebnis (bei 1 Schaden blockt "gut" also auch alles, erst bei größeren Zahlen gibt es einen Unterschied)
+const BLOCK_DAMAGE = {
+  perfect: () => 0,
+  good: (damage) => Math.floor(damage / 2),
+  miss: (damage) => damage,
+};
+// Technik für den nächsten Angriff des Spielers (nach dem Benutzen wieder "attack")
+let selectedTechnique = "attack";
 
 // Gibt zurück, ob gerade gekämpft wird.
 export function isInCombat() {
   return combat !== null;
-}
-
-// Gibt zurück, wer gerade dran ist (null außerhalb vom Kampf).
-export function getCurrentCombatant() {
-  return combat === null ? null : combat.current;
 }
 
 // Gibt zurück, ob der Spieler gerade dran ist und nichts mehr läuft (dann darf er handeln).
@@ -65,7 +71,7 @@ export function getReachableTiles() {
   return reachable;
 }
 
-// Gibt den Zustand für die Anzeige zurück: Reihenfolge, Runde, freie Felder, Aktion verbraucht.
+// Gibt den Zustand für die Anzeige zurück: Reihenfolge, wer dran ist, Runde, übrige Felder, Aktion verbraucht.
 export function getCombatState() {
   if (combat === null) {
     return null;
@@ -77,6 +83,21 @@ export function getCombatState() {
     moveLeft: combat.moveLeft,
     actionUsed: combat.actionUsed,
   };
+}
+
+// Gibt die ausgewählte Technik für den nächsten Angriff zurück.
+export function getSelectedTechnique() {
+  return selectedTechnique;
+}
+
+// Wählt die Technik für den nächsten Angriff (z. B. aus der Technik-Leiste). false, wenn sie gerade nicht geht.
+export function selectTechnique(techniqueId) {
+  if (!isPlayerTurn() || !hasTechnique(player, techniqueId) || getCooldown(player, techniqueId) > 0) {
+    return false;
+  }
+  selectedTechnique = techniqueId;
+  emitTurnUpdated();
+  return true;
 }
 
 // Prüft, ob der Charakter gerade essen darf (null = ja, sonst der Grund als Meldung). Für setupFood.
@@ -236,6 +257,8 @@ function nextTurn() {
   combat.moveLeft = getMoveRange(fighter);
   combat.actionUsed = false;
   combat.busy = false;
+  selectedTechnique = "attack";
+  tickCooldowns(fighter);
   emit("turnStarted", { combatant: fighter, isPlayer: fighter === player, round: combat.round });
   emitTurnUpdated();
 
@@ -271,7 +294,7 @@ function playerAttack(enemy) {
     return;
   }
   if (isAdjacent(player, enemy)) {
-    attack(player, enemy);
+    playerCombo(enemy);
     return;
   }
 
@@ -282,7 +305,7 @@ function playerAttack(enemy) {
   }
   walkPlayer(path, () => {
     if (combat !== null && enemy.alive) {
-      attack(player, enemy);
+      playerCombo(enemy);
     }
   });
 }
@@ -304,31 +327,103 @@ function walkPlayer(path, onDone) {
   });
 }
 
-// Ein Angriff: erst Ausweichen würfeln, dann Schaden. Meldet "attackResolved" und prüft, ob jemand besiegt ist.
-function attack(attacker, target) {
+// Angriff des Spielers als Rhythmus-Combo mit der ausgewählten Technik:
+// Ausweichen würfeln, erster Schlag trifft sicher, jeder getroffene Takt hängt einen Zusatzschlag an.
+async function playerCombo(enemy) {
+  const technique = getTechnique(selectedTechnique);
+  selectedTechnique = "attack";
   combat.actionUsed = true;
-  faceTowards(attacker, target);
-
-  const dodged = Math.random() < getDodgeChance(target);
-  const damage = dodged ? 0 : getDamage(attacker);
-  if (!dodged) {
-    takeDamage(target, damage);
-  }
-  emit("attackResolved", { attacker, target, damage, dodged });
+  combat.busy = true;
+  startCooldown(player, technique.id);
+  faceTowards(player, enemy);
   emitTurnUpdated();
 
-  if (target.hp > 0) {
+  const hits = [];
+  const hit = (factor, index) => {
+    const damage = getScaledDamage(player, factor);
+    takeDamage(enemy, damage);
+    hits.push(damage);
+    emit("attackResolved", { attacker: player, target: enemy, damage, dodged: false, technique: technique.id, hit: index });
+  };
+
+  // Ausweichen gilt für die ganze Combo
+  const dodged = Math.random() < getDodgeChance(enemy);
+  let results = [];
+  if (dodged) {
+    emit("attackResolved", { attacker: player, target: enemy, damage: 0, dodged: true, technique: technique.id, hit: 0 });
+  } else {
+    hit(technique.firstHit ?? 1, 0);
+    if (enemy.hp > 0) {
+      results = await startRhythm({
+        pattern: technique.pattern,
+        target: enemy.mesh,
+        stopAtMiss: true,
+        onBeat: (index, result) => {
+          if (result === "miss") {
+            return;
+          }
+          hit(technique.pattern[index].damage, index + 1);
+          if (enemy.hp === 0) {
+            stopRhythm();
+          }
+        },
+      });
+    }
+  }
+
+  emit("comboEnded", { attacker: player, target: enemy, technique: technique.id, results, hits, dodged });
+  if (combat === null) {
     return;
   }
-  if (target === player) {
-    endCombat("defeat");
+  combat.busy = false;
+  if (enemy.hp === 0) {
+    defeatEnemy(enemy);
+  }
+  emitTurnUpdated();
+}
+
+// Gegner ist besiegt: verschwindet, und wenn keiner mehr steht, ist der Kampf gewonnen.
+function defeatEnemy(enemy) {
+  removeEnemy(enemy);
+  emit("enemyDefeated", { enemy });
+  if (combat.enemies.every((other) => !other.alive)) {
+    endCombat("victory", enemy);
+  }
+}
+
+// Angriff eines Gegners mit Block-Timing: Ein zufälliges Muster aus attackPatterns, jeder Takt ist ein Schlag.
+// Perfekt geblockt = 0 Schaden, gut = halber Schaden (abgerundet), daneben = voller Schaden.
+async function enemyAttack(enemy) {
+  combat.actionUsed = true;
+  faceTowards(enemy, player);
+
+  // Ausgewichen (AGI) = gar kein Schlag, kein Blocken nötig
+  if (Math.random() < getDodgeChance(player)) {
+    emit("attackResolved", { attacker: enemy, target: player, damage: 0, dodged: true });
     return;
   }
 
-  removeEnemy(target);
-  emit("enemyDefeated", { enemy: target });
-  if (combat.enemies.every((enemy) => !enemy.alive)) {
-    endCombat("victory", target);
+  const patterns = enemy.attackPatterns;
+  const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+  await startRhythm({
+    pattern: pattern,
+    target: player.mesh,
+    stopAtMiss: false,
+    onBeat: (index, result) => {
+      const fullDamage = getScaledDamage(enemy, pattern[index].damage);
+      const damage = BLOCK_DAMAGE[result](fullDamage);
+      if (damage > 0) {
+        takeDamage(player, damage);
+      }
+      emit("attackResolved", { attacker: enemy, target: player, damage, dodged: false, block: result });
+      if (player.hp === 0) {
+        stopRhythm();
+      }
+    },
+  });
+
+  if (combat !== null && player.hp === 0) {
+    endCombat("defeat");
   }
 }
 
@@ -362,7 +457,7 @@ async function runEnemyTurn(enemy) {
   }
 
   if (combat !== null && isAdjacent(enemy, player)) {
-    attack(enemy, player);
+    await enemyAttack(enemy);
     await wait(ENEMY_AFTER_ACTION_TIME);
   }
   if (combat !== null && combat.current === enemy) {
@@ -401,6 +496,8 @@ function updateEnemyStep(deltaTime) {
 function endCombat(result, lastEnemy = null) {
   const enemies = combat.enemies;
   combat = null;
+  selectedTechnique = "attack";
+  stopRhythm();
   waits.length = 0;
   setOccupied(player.x, player.z, false);
 
@@ -438,6 +535,11 @@ function faceTowards(fighter, target) {
   } else {
     fighter.mesh.rotation.y = Math.atan2(target.x - fighter.x, target.z - fighter.z);
   }
+}
+
+// Ein Schlag mit diesem Anteil vom normalen Schaden (z. B. 0.5 für einen Zusatzschlag), mindestens 1.
+function getScaledDamage(attacker, factor) {
+  return Math.max(1, Math.round(getDamage(attacker) * factor));
 }
 
 // Felder-Abstand (nur gerade Schritte).

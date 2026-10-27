@@ -1,12 +1,11 @@
 // Holzfällen: Baum erreicht → Axt prüfen → Timing-Mini-Spiel → Logs + XP → Stumpf → wächst nach.
 // Alle Werte pro Baum stehen in skills.json unter woodcutting.trees.
 import SKILL_DATA from "../data/skills.json";
-import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
 import { getLevel } from "./skills.js";
 import { isInside, getTile } from "../world/grid.js";
-import { getSlots, canAddItem } from "../inventory/inventory.js";
+import { canAddItem, hasToolFor } from "../inventory/inventory.js";
 import { startTimingBar, stopTimingBar } from "../ui/timingBar.js";
 import { showMessage } from "../ui/messages.js";
 
@@ -31,7 +30,7 @@ export function setupWoodcutting(character) {
       showMessage("This tree has been cut down");
       return;
     }
-    if (!hasTool(character.inventory)) {
+    if (!hasToolFor(character.inventory, "woodcutting")) {
       showMessage("You need an axe to chop this tree");
       return;
     }
@@ -107,16 +106,6 @@ function updateFelledTrees(deltaTime) {
       emit("treeGrown", { x: felled.x, z: felled.z });
     }
   }
-}
-
-// Prüft, ob ein Werkzeug für Woodcutting (eine Axt) im Inventar ist.
-function hasTool(inventory) {
-  for (const slot of getSlots(inventory)) {
-    if (slot !== null && ITEMS[slot.item].skill === "woodcutting" && ITEMS[slot.item].tags.includes("tool")) {
-      return true;
-    }
-  }
-  return false;
 }
 
 // Macht aus x / z einen Schlüssel für die Map.

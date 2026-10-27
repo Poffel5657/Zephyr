@@ -1,0 +1,23 @@
+{
+  "attack": {
+    "name": "Attack",
+    "pattern": [
+      { "key": "right", "after": 0.6, "damage": 0.5 }
+    ]
+  },
+  "cleave": {
+    "name": "Cleave",
+    "skill": "woodcutting",
+    "level": 5,
+    "tool": true,
+    "cooldown": 2,
+    "firstHit": 2,
+    "xp": 10,
+    "xpPerHit": 5,
+    "pattern": [
+      { "key": "up", "after": 0.6, "damage": 0.5 },
+      { "key": "up", "after": 0.35, "damage": 0.5 },
+      { "key": "right", "after": 0.7, "damage": 1 }
+    ]
+  }
+}

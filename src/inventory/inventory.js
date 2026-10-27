@@ -153,6 +153,13 @@ export function setSlots(inventory, slots) {
   emit("inventoryChanged", { inventory });
 }
 
+// Prüft, ob ein Werkzeug für diesen Skill im Inventar ist (z. B. eine Axt für "woodcutting").
+export function hasToolFor(inventory, skillId) {
+  return inventory.slots.some(
+    (slot) => slot !== null && ITEMS[slot.item].skill === skillId && ITEMS[slot.item].tags.includes("tool"),
+  );
+}
+
 // Gibt die Liste aller Plätze zurück.
 export function getSlots(inventory) {
   return inventory.slots;

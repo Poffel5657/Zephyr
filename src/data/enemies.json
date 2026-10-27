@@ -5,6 +5,13 @@
     "level": 1,
     "stats": { "str": 5, "vit": 5, "zep": 0, "agi": 4 },
     "aggroRange": 3,
+    "attackPatterns": [
+      [{ "key": "left", "after": 0.8, "damage": 1 }],
+      [
+        { "key": "down", "after": 0.8, "damage": 0.5 },
+        { "key": "left", "after": 0.45, "damage": 0.5 }
+      ]
+    ],
     "respawnSeconds": 30
   }
 }

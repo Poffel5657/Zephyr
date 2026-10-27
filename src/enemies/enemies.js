@@ -35,6 +35,7 @@ export function createEnemies(scene, spawns, clickables) {
       stats: { ...type.stats },
       level: type.level,
       aggroRange: type.aggroRange,
+      attackPatterns: type.attackPatterns,
       respawnSeconds: type.respawnSeconds,
       home: { x: spawn.x, z: spawn.z },
       x: spawn.x,
@@ -61,13 +62,8 @@ export function getEnemies() {
   return enemies;
 }
 
-// Gibt den ausgewählten Gegner zurück (oder null).
-export function getSelectedEnemy() {
-  return selectedEnemy;
-}
-
 // Wählt einen Gegner aus (null = keiner) und meldet "enemySelected".
-export function selectEnemy(enemy) {
+function selectEnemy(enemy) {
   if (enemy === selectedEnemy) {
     return;
   }

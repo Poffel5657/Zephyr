@@ -1,0 +1,11 @@
+{
+  "perfectWindow": 0.06,
+  "goodWindow": 0.15,
+  "approachTime": 0.8,
+  "keys": {
+    "up": { "label": "↑", "color": "#4a90e2", "codes": ["ArrowUp", "KeyW"] },
+    "right": { "label": "→", "color": "#e04848", "codes": ["ArrowRight", "KeyD"] },
+    "down": { "label": "↓", "color": "#3fbf6a", "codes": ["ArrowDown", "KeyS"] },
+    "left": { "label": "←", "color": "#e8c33a", "codes": ["ArrowLeft", "KeyA"] }
+  }
+}
