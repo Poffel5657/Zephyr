@@ -1,0 +1,47 @@
+{
+  "oak_log": {
+    "name": "Oak Log",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["resource"],
+    "sprite": "sprites/items/oak_log.png"
+  },
+  "copper_axe": {
+    "name": "Copper Axe",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["tool", "equippable"],
+    "skill": "woodcutting",
+    "sprite": "sprites/items/copper_axe.png"
+  },
+  "copper_ore": {
+    "name": "Copper Ore",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["resource"],
+    "sprite": "sprites/items/copper_ore.png"
+  },
+  "copper_pickaxe": {
+    "name": "Copper Pickaxe",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["tool", "equippable"],
+    "skill": "mining",
+    "sprite": "sprites/items/copper_pickaxe.png"
+  },
+  "fish": {
+    "name": "Fish",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["resource"],
+    "sprite": "sprites/items/fish.png"
+  },
+  "old_fishing_pole": {
+    "name": "Old Fishing Pole",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["tool", "equippable"],
+    "skill": "fishing",
+    "sprite": "sprites/items/old_fishing_pole.png"
+  }
+}
