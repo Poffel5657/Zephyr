@@ -9,6 +9,10 @@ import { setupInput } from "../core/input.js";
 import { createPlayer } from "../player/player.js";
 import { createTileMarker } from "../ui/tileMarker.js";
 import { setupPlayerMovement } from "../player/movement.js";
+import { setupInventoryEvents } from "../inventory/inventory.js";
+import { setupDebugKeys } from "../debug/debugKeys.js";
+import { createInventoryPanel } from "../ui/inventoryPanel.js";
+import { setupMessages } from "../ui/messages.js";
 
 export const scene = new THREE.Scene();
 export const renderer = new THREE.WebGLRenderer();
@@ -20,6 +24,10 @@ loadGrid(islandData);
 setupLighting(scene);
 const player = createPlayer(scene, 6, 6);
 setupPlayerMovement(player);
+setupDebugKeys(); // DEBUG: wieder entfernen, sobald Woodcutting Items gibt (Phase 5)
+setupInventoryEvents(player.inventory);
+createInventoryPanel(player.inventory);
+setupMessages();
 const clickables = buildIsland(scene);
 setupCamera(renderer.domElement);
 setupInput(camera, renderer.domElement, clickables);

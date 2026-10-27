@@ -21,6 +21,15 @@ export function setupInput(activeCamera, drawingCanvas, clickableObjects) {
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointerup", onPointerUp);
   canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerleave", onPointerLeave);
+}
+
+// Meldet "tileHovered" mit null, wenn die Maus das Spielfeld verlässt (z. B. aufs Inventar-Fenster).
+function onPointerLeave() {
+  if (hoveredTile !== null) {
+    hoveredTile = null;
+    emit("tileHovered", null);
+  }
 }
 
 // Merkt sich, wo die linke Maustaste gedrückt wurde.

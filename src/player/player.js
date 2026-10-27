@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { gridToWorld } from "../world/grid.js";
+import { createInventory } from "../inventory/inventory.js";
 
 export function createPlayer(scene, x, z) {
   // 1. Größe festlegen (Gesamthöhe = Mittelteil + 2 × Radius)
@@ -27,5 +28,6 @@ export function createPlayer(scene, x, z) {
     x: x,
     z: z,
     mesh: mesh,
+    inventory: createInventory(),
   };
 }
