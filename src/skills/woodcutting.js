@@ -16,6 +16,8 @@ const TREES = SKILL_DATA.skills.woodcutting.trees;
 const felledTrees = new Map();
 // Der Baum, der gerade gefällt wird (null = gerade nicht)
 let currentTree = null;
+// Im Kampf ist die Welt eingefroren: Bäume wachsen nicht nach
+let worldFrozen = false;
 
 // Meldet das Holzfällen für diesen Charakter an.
 export function setupWoodcutting(character) {
@@ -71,6 +73,8 @@ export function setupWoodcutting(character) {
     }
   });
 
+  on("combatStarted", () => (worldFrozen = true));
+  on("combatEnded", () => (worldFrozen = false));
   addUpdate(updateFelledTrees);
 }
 
@@ -93,6 +97,9 @@ export function setFelledTrees(list) {
 
 // Zählt bei gefällten Bäumen die Zeit herunter und lässt sie nachwachsen.
 function updateFelledTrees(deltaTime) {
+  if (worldFrozen) {
+    return;
+  }
   for (const [key, felled] of felledTrees) {
     felled.timeLeft -= deltaTime;
     if (felled.timeLeft <= 0) {

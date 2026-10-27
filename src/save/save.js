@@ -5,6 +5,7 @@ import { emit, on } from "../core/eventBus.js";
 import { gridToWorld, isWalkable } from "../world/grid.js";
 import { getSlots, setSlots } from "../inventory/inventory.js";
 import { getFelledTrees, setFelledTrees } from "../skills/woodcutting.js";
+import { getMaxHp } from "../character/character.js";
 import { showMessage } from "../ui/messages.js";
 
 const STORAGE_KEY = "zephyr-save";
@@ -12,7 +13,8 @@ const MANUAL_KEY = "zephyr-save-manual";
 // Hierhin kommt ein Spielstand, der nicht geladen werden konnte, damit er nicht überschrieben wird
 const BROKEN_KEY = "zephyr-save-broken";
 // Bei neuen Daten in späteren Phasen hochzählen und in applySaveData alte Stände auffüllen
-const SAVE_VERSION = 1;
+// Version 2: aktuelle HP (Phase 8)
+const SAVE_VERSION = 2;
 
 // Automatisch speichern: nach Änderungen höchstens einmal pro Sekunde, sonst alle 10 Sekunden
 const CHANGE_DELAY_MS = 1000;
@@ -20,6 +22,10 @@ const INTERVAL_MS = 10000;
 
 // Nach "New Game" oder "Import" nicht mehr speichern, sonst schreibt das Verlassen der Seite den alten Stand zurück
 let savingStopped = false;
+// Im Kampf wird nicht gespeichert: Der Stand von vor dem Kampf bleibt der Autosave
+let savingPaused = false;
+// So lange steht "You were defeated" da, bevor neu geladen wird
+const DEFEAT_RELOAD_MS = 2000;
 
 // Baut den Spielstand als einfaches Objekt.
 export function createSaveData(player) {
@@ -35,6 +41,7 @@ export function createSaveData(player) {
       level: player.level,
       skillLevelUps: player.skillLevelUps,
       unspentPoints: player.unspentPoints,
+      hp: player.hp,
     },
     world: {
       felledTrees: getFelledTrees(),
@@ -54,7 +61,7 @@ export function saveManual(player) {
 
 // Schreibt den Stand unter alle diese Schlüssel.
 function writeSave(player, keys) {
-  if (savingStopped) {
+  if (savingStopped || savingPaused) {
     return false;
   }
   try {
@@ -164,9 +171,29 @@ export function setupAutoSave(player) {
     }
   };
 
-  for (const eventName of ["inventoryChanged", "skillsChanged", "statsChanged"]) {
+  for (const eventName of ["inventoryChanged", "skillsChanged", "statsChanged", "hpChanged"]) {
     on(eventName, saveSoon);
   }
+
+  // Kampfstart: noch einmal speichern, dann bis zum Ende pausieren (Neuladen im Kampf = Stand von vor dem Kampf)
+  on("combatStarted", () => {
+    saveGame(player);
+    savingPaused = true;
+  });
+  on("combatEnded", ({ result }) => {
+    if (result !== "defeat") {
+      savingPaused = false;
+      saveGame(player);
+      return;
+    }
+    // Niederlage: zum eigenen Save, ohne eigenen Save zum Stand von vor dem Kampf (der Autosave)
+    setTimeout(() => {
+      if (!loadManualSave()) {
+        savingStopped = true;
+      }
+      location.reload();
+    }, DEFEAT_RELOAD_MS);
+  });
   // Position und Baum-Restzeiten ändern sich ohne Event
   setInterval(() => saveGame(player), INTERVAL_MS);
 
@@ -249,7 +276,11 @@ function applySaveData(player, data) {
   if (Number.isInteger(saved.unspentPoints) && saved.unspentPoints >= 0) {
     player.unspentPoints = saved.unspentPoints;
   }
+  // Ältere Stände ohne HP starten mit vollen HP
+  const maxHp = getMaxHp(player);
+  player.hp = Number.isInteger(saved.hp) && saved.hp >= 1 ? Math.min(saved.hp, maxHp) : maxHp;
   emit("statsChanged", { character: player });
+  emit("hpChanged", { character: player });
 
   if (Array.isArray(data.world?.felledTrees)) {
     setFelledTrees(data.world.felledTrees);

@@ -6,6 +6,8 @@ export const TILE_SIZE = 1;
 export const STEP_HEIGHT = 0.5;
 
 let currentMap = null;
+// Felder, auf denen gerade jemand steht (Gegner, im Kampf auch der Spieler): "x,z"
+const occupiedTiles = new Set();
 
 // Lädt eine Map, auf die sich ab jetzt alle Fragen beziehen.
 export function loadGrid(mapData) {
@@ -43,10 +45,19 @@ export function gridToWorld(x, z) {
   return new THREE.Vector3(x * TILE_SIZE, tile.height * STEP_HEIGHT, z * TILE_SIZE);
 }
 
-// Prüft, ob man auf das Feld bei x / z laufen kann (kein Wasser, keine Luft, kein Objekt im Weg).
+// Markiert ein Feld als besetzt (true) oder wieder frei (false).
+export function setOccupied(x, z, occupied) {
+  if (occupied) {
+    occupiedTiles.add(x + "," + z);
+  } else {
+    occupiedTiles.delete(x + "," + z);
+  }
+}
+
+// Prüft, ob man auf das Feld bei x / z laufen kann (kein Wasser, keine Luft, kein Objekt oder Gegner im Weg).
 export function isWalkable(x, z) {
   const tile = getTile(x, z);
-  if (tile === null || tile.object) {
+  if (tile === null || tile.object || occupiedTiles.has(x + "," + z)) {
     return false;
   }
   return TILE_TYPES[tile.type].walkable;

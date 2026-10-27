@@ -37,6 +37,7 @@
     "name": "Fish",
     "stackable": true,
     "maxStack": 3,
+    "heal": 3,
     "tags": ["resource"],
     "color": "#5a8fbf",
     "sprite": "sprites/items/fish.png"

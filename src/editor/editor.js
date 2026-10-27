@@ -87,6 +87,8 @@ function mapToJSON(map) {
     `  "name": ${JSON.stringify(map.name)},\n` +
     `  "width": ${map.width},\n` +
     `  "depth": ${map.depth},\n` +
+    // Gegner-Startfelder werden (noch) nicht im Editor bearbeitet, aber beim Speichern behalten
+    (map.enemies ? `  "enemies": ${JSON.stringify(map.enemies)},\n` : "") +
     '  "tiles": [\n' +
     rows.join(",\n") +
     "\n  ]\n}\n"
@@ -140,7 +142,11 @@ function parseMap(text) {
     });
   });
 
-  return { name: String(data.name || "Insel"), width, depth, tiles };
+  const map = { name: String(data.name || "Insel"), width, depth, tiles };
+  if (Array.isArray(data.enemies)) {
+    map.enemies = data.enemies;
+  }
+  return map;
 }
 
 function saveLocal() {

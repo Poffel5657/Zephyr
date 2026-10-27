@@ -2,6 +2,7 @@
 import "./ui.css";
 import { saveManual, loadManualSave, getManualSaveTime, deleteSave, exportSaveText, importSaveText } from "../save/save.js";
 import { showMessage } from "./messages.js";
+import { isInCombat } from "../combat/combat.js";
 
 const TOGGLE_KEY = "Escape";
 const HIDDEN_CLASS = "menu-hidden";
@@ -81,7 +82,9 @@ export function createMenu(player) {
 
   // Eigenen Save anlegen (zu dem man mit "Load" zurückkehren kann)
   const saveButton = createMenuButton("Save", () => {
-    if (saveManual(player)) {
+    if (isInCombat()) {
+      showMessage("You can't save during combat");
+    } else if (saveManual(player)) {
       showMessage("Game saved");
       updateLoadButton();
     } else {

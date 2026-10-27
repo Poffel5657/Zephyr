@@ -148,11 +148,13 @@ export function createCharacterPanel(character) {
     }
   });
 
-  on("statsChanged", (data) => {
-    if (data.character === character) {
-      update();
-    }
-  });
+  for (const eventName of ["statsChanged", "hpChanged"]) {
+    on(eventName, (data) => {
+      if (data.character === character) {
+        update();
+      }
+    });
+  }
 
   update();
 }
@@ -176,7 +178,9 @@ function updateCharacter(character, elements, draft) {
   // Max-HP/ZEP schon mit dem Entwurf anzeigen, damit man sieht, was ein Punkt bringt
   const tempCharacter = { ...character, stats: draftStats };
 
-  elements.hp.textContent = `Max HP: ${getMaxHp(tempCharacter)}`;
+  // Aktuelle HP wachsen mit dem Entwurf genauso wie Max-HP (es fehlt gleich viel)
+  const maxHp = getMaxHp(tempCharacter);
+  elements.hp.textContent = `HP: ${character.hp + maxHp - getMaxHp(character)} / ${maxHp}`;
   elements.zep.textContent = `Max ZEP: ${getMaxZep(tempCharacter)}`;
   elements.points.textContent = `Points: ${remainingPoints}`;
 

@@ -2,6 +2,7 @@
   "name": "Beispielinsel",
   "width": 14,
   "depth": 14,
+  "enemies": [{ "type": "wild_gust", "x": 4, "z": 10 }],
   "tiles": [
     [null,null,null,null,null,null,null,null,null,null,null,null,null,null],
     [null,null,null,null,null,{"height":1,"type":"sand"},{"height":1,"type":"sand"},{"height":1,"type":"sand"},{"height":1,"type":"sand"},null,null,null,null,null],

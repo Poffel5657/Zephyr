@@ -1,7 +1,7 @@
 // Zeigt das Inventar eines Charakters als HTML-Fenster über dem Spiel (öffnen/schließen mit I oder Knopf).
 import "./ui.css";
 import ITEMS from "../data/items.json";
-import { on } from "../core/eventBus.js";
+import { emit, on } from "../core/eventBus.js";
 import { SLOT_COUNT, getSlots, clearSlot, moveSlot } from "../inventory/inventory.js";
 
 const TOGGLE_KEY = "KeyI";
@@ -33,6 +33,11 @@ export function createInventoryPanel(inventory) {
   const infoName = document.createElement("span");
   infoName.className = "inventory-info-name";
   info.appendChild(infoName);
+  // Essen-Knopf, nur sichtbar, wenn das ausgewählte Item heilt
+  const eatButton = document.createElement("button");
+  eatButton.className = "inventory-drop inventory-eat";
+  eatButton.textContent = "Eat";
+  info.appendChild(eatButton);
   const dropButton = document.createElement("button");
   dropButton.className = "inventory-drop";
   dropButton.textContent = "Drop";
@@ -52,6 +57,8 @@ export function createInventoryPanel(inventory) {
     }
     slotElements.forEach(({ slot }, i) => slot.classList.toggle(SELECTED_CLASS, i === selectedIndex));
     dropButton.disabled = selectedIndex === null;
+    const selected = selectedIndex === null ? null : getSlots(inventory)[selectedIndex];
+    eatButton.hidden = selected === null || ITEMS[selected.item].heal === undefined;
     showName(selectedIndex);
   };
 
@@ -111,6 +118,12 @@ export function createInventoryPanel(inventory) {
     slotElements.push({ slot, amount });
   }
   document.body.appendChild(panel);
+
+  eatButton.addEventListener("click", () => {
+    if (selectedIndex !== null) {
+      emit("eatRequested", { inventory, slotIndex: selectedIndex });
+    }
+  });
 
   dropButton.addEventListener("click", () => {
     if (selectedIndex !== null) {

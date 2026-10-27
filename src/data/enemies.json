@@ -1,0 +1,10 @@
+{
+  "wild_gust": {
+    "name": "Wild Gust",
+    "color": "#b8c4cc",
+    "level": 1,
+    "stats": { "str": 5, "vit": 5, "zep": 0, "agi": 4 },
+    "aggroRange": 3,
+    "respawnSeconds": 30
+  }
+}

@@ -2,7 +2,7 @@
 import { getTile, isWalkable } from "./grid.js";
 
 // So viele Höhenstufen darf ein Schritt hoch oder runter gehen.
-const MAX_STEP_UP = 1;
+export const MAX_STEP_UP = 1;
 const DIRECTIONS = [
   { x: 1, z: 0 },
   { x: -1, z: 0 },

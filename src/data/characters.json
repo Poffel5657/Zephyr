@@ -2,6 +2,15 @@
   "levelFactor": 0.5,
   "skillLevelsPerLevel": 5,
   "pointsPerLevel": 5,
+  "combat": {
+    "damageFactor": 0.2,
+    "damageSpread": 0.2,
+    "dodgePerAgi": 0.01,
+    "maxDodge": 0.3,
+    "baseMove": 2,
+    "agiPerMove": 5,
+    "fleeDistance": 6
+  },
   "characters": {
     "hero": { "name": "Hero", "stats": { "str": 5, "vit": 5, "zep": 5, "agi": 5 } }
   }
