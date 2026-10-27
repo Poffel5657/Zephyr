@@ -1,5 +1,4 @@
-import "./editor.css";
-import TILE_TYPES from "../data/tileTypes.json";
+import { data, markDirty } from "./gameData.js";
 
 /*
   Zephyr Map-Editor
@@ -9,14 +8,19 @@ import TILE_TYPES from "../data/tileTypes.json";
     null                                        -> Luft (hier ist keine Insel)
     { height: 1-8, type: "grass" }              -> ein Feld
     { height: 2, type: "grass", object: "tree" } -> ein Feld mit Objekt drauf
+  map.enemies ist eine Liste von Gegner-Startfeldern: [{ type: "wild_gust", x, z, level }]
+  (level fehlt bei Lv 1).
 
   x = nach rechts, z = nach unten (in 3D später: nach vorne).
 */
 
 // ---------- Einstellungen ----------
 
-// Bodentypen kommen aus einer gemeinsamen Datei, die auch das Spiel benutzt
-const TYPES = TILE_TYPES;
+// Bodentypen und Gegner kommen aus den Spieldaten (gameData lädt sie vorher vom Dev-Server)
+const TYPES = data["tileTypes.json"];
+const ENEMY_TYPES = data["enemies.json"];
+// Die Karte, die das Spiel lädt
+const MAP_FILE = "maps/start-island.json";
 
 const OBJECTS = {
   tree: "Baum",
@@ -28,14 +32,16 @@ const TOOLS = {
   raise: "Höher",
   lower: "Tiefer",
   object: "Objekt",
+  enemy: "Gegner",
   erase: "Radieren",
 };
+
+const ENEMY_LEVELS = [1, 2, 3];
 
 const MIN_HEIGHT = 1;
 const MAX_HEIGHT = 8;
 const MIN_SIZE = 4;
 const MAX_SIZE = 64;
-const STORAGE_KEY = "zephyr-editor-map";
 
 // ---------- Map-Daten ----------
 
@@ -144,34 +150,26 @@ function parseMap(text) {
 
   const map = { name: String(data.name || "Insel"), width, depth, tiles };
   if (Array.isArray(data.enemies)) {
-    map.enemies = data.enemies;
+    // Nur bekannte Gegner auf Feldern innerhalb der Karte
+    map.enemies = data.enemies
+      .filter((e) => e && ENEMY_TYPES[e.type] && Number.isInteger(e.x) && Number.isInteger(e.z))
+      .filter((e) => e.x >= 0 && e.z >= 0 && e.x < width && e.z < depth)
+      .map((e) => cleanEnemy(e.type, e.x, e.z, e.level));
   }
   return map;
 }
 
-function saveLocal() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // Speichern im Browser geht nicht (z.B. privates Fenster). Nicht schlimm.
-  }
-}
-
-function loadLocal() {
-  try {
-    const text = localStorage.getItem(STORAGE_KEY);
-    return text ? parseMap(text) : null;
-  } catch {
-    return null;
-  }
-}
-
 // ---------- Zustand ----------
 
-let map = loadLocal() || createSampleMap();
+// Start mit der Karte aus dem Spiel
+let map = parseMap(JSON.stringify(data[MAP_FILE]));
+// Beim Aufbau nicht als "geändert" markieren
+let starting = true;
 let tool = "paint";
 let currentType = "grass";
 let currentObject = "tree";
+let currentEnemy = Object.keys(ENEMY_TYPES)[0];
+let currentEnemyLevel = 1;
 let showHeights = true;
 
 let undoStack = [];
@@ -275,6 +273,10 @@ function draw() {
     }
   }
 
+  for (const enemy of map.enemies ?? []) {
+    drawEnemy(enemy);
+  }
+
   if (hoverCell) {
     ctx.strokeStyle = accent;
     ctx.lineWidth = 2;
@@ -337,6 +339,26 @@ function drawTile(tile, x, z) {
   }
 }
 
+// Gegner als farbiger Punkt mit Level
+function drawEnemy(enemy) {
+  const cx = enemy.x * cell + cell / 2;
+  const cz = enemy.z * cell + cell / 2;
+  ctx.fillStyle = ENEMY_TYPES[enemy.type].color;
+  ctx.strokeStyle = "rgba(15, 22, 28, 0.85)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cz, cell * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  if (cell >= 18) {
+    ctx.fillStyle = "rgba(15, 22, 28, 0.9)";
+    ctx.font = `700 ${Math.round(cell * 0.3)}px ${token("--font-mono") || "monospace"}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(enemy.level ?? 1), cx, cz + 1);
+  }
+}
+
 function drawEdges(tile, x, z) {
   const px = x * cell;
   const pz = z * cell;
@@ -388,13 +410,47 @@ function applyTool(c) {
       if (currentObject === "none") delete tile.object;
       else tile.object = currentObject;
     }
+  } else if (tool === "enemy" && stroke.size === 1) {
+    // Klick setzt einen Gegner, Klick auf einen vorhandenen entfernt ihn (nur am Anfang eines Strichs, nicht beim Ziehen)
+    const existing = enemyAt(c.x, c.z);
+    if (existing) {
+      map.enemies.splice(map.enemies.indexOf(existing), 1);
+    } else if (canHoldEnemy(tile)) {
+      map.enemies ??= [];
+      map.enemies.push(cleanEnemy(currentEnemy, c.x, c.z, currentEnemyLevel));
+    }
   } else if (tool === "erase") {
     map.tiles[c.z][c.x] = null;
   }
 
+  removeInvalidEnemies();
   draw();
   updateStats();
   updateHoverInfo();
+}
+
+// ---------- Gegner ----------
+
+// Gegner-Eintrag wie in der JSON: level nur, wenn er nicht 1 ist
+function cleanEnemy(type, x, z, level) {
+  const enemy = { type, x, z };
+  if (Number.isInteger(level) && level > 1) enemy.level = level;
+  return enemy;
+}
+
+function enemyAt(x, z) {
+  return (map.enemies ?? []).find((e) => e.x === x && e.z === z) ?? null;
+}
+
+// Gegner nur auf begehbaren Feldern ohne Objekt
+function canHoldEnemy(tile) {
+  return Boolean(tile && TYPES[tile.type].walkable && !tile.object);
+}
+
+// Nach dem Malen, Radieren oder Objekt-Setzen: Gegner auf ungültigen Feldern fliegen raus
+function removeInvalidEnemies() {
+  if (!map.enemies) return;
+  map.enemies = map.enemies.filter((e) => canHoldEnemy(tileAt(e.x, e.z)));
 }
 
 function cellAt(event) {
@@ -471,9 +527,18 @@ function undo() {
 // ---------- Oberfläche ----------
 
 function changed() {
-  saveLocal();
+  // Die Karte in den Spieldaten aktuell halten, damit "Speichern" und die Prüfung sie sehen
+  data[MAP_FILE] = map;
+  if (!starting) {
+    markDirty(MAP_FILE);
+  }
   refreshJSON();
   updateStats();
+}
+
+// Text der Karten-Datei zum Speichern (jede Reihe in einer Zeile).
+export function mapFileText() {
+  return mapToJSON(map);
 }
 
 function refreshJSON() {
@@ -494,8 +559,9 @@ function updateStats() {
       top = Math.max(top, tile.height);
     }
   }
+  const enemies = (map.enemies ?? []).length;
   $("status").textContent =
-    `${map.width} × ${map.depth} Felder · ${tiles} Inselfelder · ${trees} Bäume · ${rocks} Felsen` +
+    `${map.width} × ${map.depth} Felder · ${tiles} Inselfelder · ${trees} Bäume · ${rocks} Felsen · ${enemies} Gegner` +
     (tiles ? ` · höchste Stufe ${top}` : "");
 }
 
@@ -512,7 +578,9 @@ function updateHoverInfo() {
     return;
   }
   const obj = tile.object ? `, ${OBJECTS[tile.object]}` : "";
-  info.textContent = `${where}: ${TYPES[tile.type].label}, Stufe ${tile.height}${obj}`;
+  const enemy = enemyAt(hoverCell.x, hoverCell.z);
+  const enemyText = enemy ? `, ${ENEMY_TYPES[enemy.type].name} Lv ${enemy.level ?? 1}` : "";
+  info.textContent = `${where}: ${TYPES[tile.type].label}, Stufe ${tile.height}${obj}${enemyText}`;
 }
 
 let messageTimer = null;
@@ -541,6 +609,21 @@ function setTool(name) {
   }
   $("type-section").hidden = name !== "paint";
   $("object-section").hidden = name !== "object";
+  $("enemy-section").hidden = name !== "enemy";
+}
+
+function setEnemy(name) {
+  currentEnemy = name;
+  for (const button of document.querySelectorAll("[data-enemy]")) {
+    button.setAttribute("aria-pressed", String(button.dataset.enemy === name));
+  }
+}
+
+function setEnemyLevel(level) {
+  currentEnemyLevel = level;
+  for (const button of document.querySelectorAll("[data-enemy-level]")) {
+    button.setAttribute("aria-pressed", String(Number(button.dataset.enemyLevel) === level));
+  }
 }
 
 function setType(name) {
@@ -590,6 +673,7 @@ function resizeMap() {
   map.width = width;
   map.depth = depth;
   map.tiles = tiles;
+  removeInvalidEnemies();
   syncInputs();
   layoutCanvas();
   changed();
@@ -646,6 +730,29 @@ function buildButtons() {
     button.addEventListener("click", () => setObject(name));
     objectBox.append(button);
   }
+
+  const enemyBox = $("enemy-buttons");
+  for (const [name, info] of Object.entries(ENEMY_TYPES)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.enemy = name;
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.style.background = info.color;
+    button.append(chip, info.name);
+    button.addEventListener("click", () => setEnemy(name));
+    enemyBox.append(button);
+  }
+
+  const levelBox = $("enemy-level-buttons");
+  for (const level of ENEMY_LEVELS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.enemyLevel = String(level);
+    button.textContent = `Lv ${level}`;
+    button.addEventListener("click", () => setEnemyLevel(level));
+    levelBox.append(button);
+  }
 }
 
 function init() {
@@ -653,6 +760,8 @@ function init() {
   setTool("paint");
   setType("grass");
   setObject("tree");
+  setEnemy(currentEnemy);
+  setEnemyLevel(1);
   syncInputs();
   undoButton.disabled = true;
 
@@ -786,6 +895,7 @@ function init() {
   layoutCanvas();
   changed();
   updateHoverInfo();
+  starting = false;
 }
 
 init();

@@ -50,5 +50,37 @@
     "skill": "fishing",
     "color": "#a89060",
     "sprite": "sprites/items/old_fishing_pole.png"
+  },
+  "gust_feather": {
+    "name": "Gust Feather",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["material"],
+    "color": "#dfe8ee",
+    "sprite": "sprites/items/gust_feather.png"
+  },
+  "storm_shard": {
+    "name": "Storm Shard",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["material"],
+    "color": "#7fb0ff",
+    "sprite": "sprites/items/storm_shard.png"
+  },
+  "crab_shell": {
+    "name": "Crab Shell",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["material"],
+    "color": "#b5703a",
+    "sprite": "sprites/items/crab_shell.png"
+  },
+  "wind_essence": {
+    "name": "Wind Essence",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["rare"],
+    "color": "#6ff0d2",
+    "sprite": "sprites/items/wind_essence.png"
   }
 }

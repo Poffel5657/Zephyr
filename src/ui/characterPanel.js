@@ -1,10 +1,14 @@
 // Zeigt die Attribute und Level-Werte eines Charakters als HTML-Fenster (öffnen/schließen mit C oder Knopf).
 import "./ui.css";
 import { on } from "../core/eventBus.js";
-import { getLevelProgress, getMaxHp, getMaxZep, spendPoints } from "../character/character.js";
+import { getLevelProgress, getMaxHp, getMaxZep, spendPoints, resetStatPoints, getSpentPointsTotal } from "../character/character.js";
+import { hasItem, removeItem } from "../inventory/inventory.js";
+import { isInCombat } from "../combat/combat.js";
 
 const TOGGLE_KEY = "KeyC";
 const HIDDEN_CLASS = "character-hidden";
+// Dieses Item kostet das Zurücksetzen aller Punkte
+const RESET_ITEM = "wind_essence";
 
 // Reihenfolge und Anzeigename der Grundwerte im Fenster
 const STATS = [
@@ -115,6 +119,43 @@ export function createCharacterPanel(character) {
   });
   panel.appendChild(confirmBtn);
 
+  // Alle Punkte zurücksetzen gegen eine Wind-Essenz, mit Sicherheitsfrage
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "character-confirm-button character-reset-button";
+  resetBtn.textContent = "Reset (1 Wind Essence)";
+  panel.appendChild(resetBtn);
+
+  const resetAsk = document.createElement("div");
+  resetAsk.className = "character-reset-ask " + HIDDEN_CLASS;
+  const resetText = document.createElement("div");
+  resetText.className = "character-reset-text";
+  resetText.textContent = "Reset all points for 1 Wind Essence?";
+  resetAsk.appendChild(resetText);
+  const resetYes = document.createElement("button");
+  resetYes.className = "character-confirm-button";
+  resetYes.textContent = "Yes";
+  resetAsk.appendChild(resetYes);
+  const resetNo = document.createElement("button");
+  resetNo.className = "character-confirm-button";
+  resetNo.textContent = "No";
+  resetAsk.appendChild(resetNo);
+  panel.appendChild(resetAsk);
+
+  const showResetAsk = (visible) => {
+    resetAsk.classList.toggle(HIDDEN_CLASS, !visible);
+    resetBtn.classList.toggle(HIDDEN_CLASS, visible);
+  };
+  resetBtn.addEventListener("click", () => showResetAsk(true));
+  resetNo.addEventListener("click", () => showResetAsk(false));
+  resetYes.addEventListener("click", () => {
+    showResetAsk(false);
+    if (canReset(character)) {
+      removeItem(character.inventory, RESET_ITEM, 1);
+      resetDraft();
+      resetStatPoints(character);
+    }
+  });
+
   document.body.appendChild(panel);
 
   const button = document.createElement("button");
@@ -129,6 +170,7 @@ export function createCharacterPanel(character) {
     zep,
     points,
     confirmBtn,
+    resetBtn,
     stats: statElements,
   };
 
@@ -137,6 +179,7 @@ export function createCharacterPanel(character) {
     const isHidden = panel.classList.toggle(HIDDEN_CLASS);
     if (isHidden) {
       resetDraft();
+      showResetAsk(false);
       update();
     }
   };
@@ -155,6 +198,14 @@ export function createCharacterPanel(character) {
       }
     });
   }
+  // Essenz bekommen/verbraucht oder Kampf beginnt/endet → Reset-Knopf an oder aus
+  on("inventoryChanged", (data) => {
+    if (data.inventory === character.inventory) {
+      update();
+    }
+  });
+  on("combatStarted", update);
+  on("combatEnded", update);
 
   update();
 }
@@ -192,9 +243,15 @@ function updateCharacter(character, elements, draft) {
   }
 
   elements.confirmBtn.disabled = draftSum <= 0;
+  elements.resetBtn.disabled = !canReset(character);
 }
 
 // Zählt die Punkte im Entwurf zusammen.
 function getDraftSum(draft) {
   return draft.str + draft.vit + draft.zep + draft.agi;
+}
+
+// Zurücksetzen geht nur mit Wind-Essenz, mit verteilten Punkten und nicht im Kampf.
+function canReset(character) {
+  return hasItem(character.inventory, RESET_ITEM) && getSpentPointsTotal(character) > 0 && !isInCombat();
 }

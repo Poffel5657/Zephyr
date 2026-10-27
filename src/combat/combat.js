@@ -24,6 +24,8 @@ const AFTER_ATTACK_TIME = 0.4;
 const ENEMY_TILES_PER_SECOND = 3;
 // Nach einer Flucht so lange keine Aggro, damit der Gegner nicht sofort wieder angreift
 const AGGRO_COOLDOWN_AFTER_FLEE = 5;
+// Gegner, die so nah beim auslösenden Gegner stehen, kämpfen mit (Gruppen)
+const GROUP_RADIUS = 2;
 
 let player = null;
 // null = kein Kampf. Sonst: { enemies, order, turnIndex, round, current, moveLeft, actionUsed, busy, starting }
@@ -164,9 +166,14 @@ export function setupCombat(character) {
 }
 
 // Startet einen Kampf mit diesem Gegner und allen anderen, in deren Aggro-Reichweite der Spieler steht.
+// Gruppen: Wer so nah beim auslösenden Gegner steht, kämpft auch mit.
 function startCombat(triggerEnemy) {
   const enemies = getEnemies().filter(
-    (enemy) => enemy.alive && (enemy === triggerEnemy || getDistance(player, enemy) <= enemy.aggroRange),
+    (enemy) =>
+      enemy.alive &&
+      (enemy === triggerEnemy ||
+        getDistance(player, enemy) <= enemy.aggroRange ||
+        getDistance(triggerEnemy, enemy) <= GROUP_RADIUS),
   );
   combat = {
     enemies: enemies,
@@ -434,7 +441,8 @@ function endPlayerTurn() {
   nextTurn();
 }
 
-// Gegner-KI: Steht er neben dem Spieler, greift er an. Sonst läuft er so weit er kann hin und greift dann an.
+// Gegner-KI: Ist der Spieler in Reichweite, greift er an. Sonst läuft er hin, bis er in Reichweite ist.
+// Fernkämpfer (attackRange > 1) weichen erst ein Feld zurück, wenn der Spieler direkt neben ihnen steht.
 async function runEnemyTurn(enemy) {
   combat.busy = true;
   await wait(ENEMY_THINK_TIME);
@@ -442,18 +450,27 @@ async function runEnemyTurn(enemy) {
     return;
   }
 
-  if (!isAdjacent(enemy, player)) {
+  if (enemy.attackRange > 1 && getDistance(enemy, player) === 1) {
+    const away = findRetreatStep(enemy);
+    if (away !== null) {
+      combat.moveLeft -= 1;
+      await walkEnemyStep(enemy, away);
+    }
+  } else if (!isInAttackRange(enemy)) {
     const path = findPathToObject({ x: enemy.x, z: enemy.z }, { x: player.x, z: player.z });
     if (path !== null && path.length > 0) {
       const steps = path.slice(0, combat.moveLeft);
-      combat.moveLeft -= steps.length;
       for (const step of steps) {
+        if (combat === null || isInAttackRange(enemy)) {
+          break;
+        }
+        combat.moveLeft -= 1;
         await walkEnemyStep(enemy, step);
       }
     }
   }
 
-  if (combat !== null && isAdjacent(enemy, player)) {
+  if (combat !== null && isInAttackRange(enemy)) {
     await enemyAttack(enemy);
     await wait(ENEMY_AFTER_ACTION_TIME);
   }
@@ -521,6 +538,10 @@ function wait(seconds) {
 
 // Meldet "combatTurnUpdated", damit die Anzeige (Felder, Knöpfe) neu zeichnet.
 function emitTurnUpdated() {
+  // Nach dem Kampfende (z. B. Sieg mitten im eigenen Angriff) gibt es keinen Zug mehr
+  if (combat === null) {
+    return;
+  }
   emit("combatTurnUpdated", getCombatState());
 }
 
@@ -536,6 +557,24 @@ function faceTowards(fighter, target) {
 // Ein Schlag mit diesem Anteil vom normalen Schaden (z. B. 0.5 für einen Zusatzschlag), mindestens 1.
 function getScaledDamage(attacker, factor) {
   return Math.max(1, Math.round(getDamage(attacker) * factor));
+}
+
+// Nahkampf: direkt daneben. Fernkampf: höchstens attackRange Felder entfernt.
+function isInAttackRange(enemy) {
+  return enemy.attackRange > 1 ? getDistance(enemy, player) <= enemy.attackRange : isAdjacent(enemy, player);
+}
+
+// Ein Nachbarfeld, das weiter vom Spieler weg ist (zum Zurückweichen), oder null, wenn keins frei ist.
+function findRetreatStep(enemy) {
+  let best = null;
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const step = { x: enemy.x + dx, z: enemy.z + dz };
+    const path = findPath({ x: enemy.x, z: enemy.z }, step);
+    if (path !== null && path.length === 1 && getDistance(step, player) > getDistance(enemy, player)) {
+      best = step;
+    }
+  }
+  return best;
 }
 
 // Felder-Abstand (nur gerade Schritte).

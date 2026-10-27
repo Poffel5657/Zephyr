@@ -9,7 +9,15 @@ export const SLOT_COUNT = 30;
 export function createInventory() {
   return {
     slots: new Array(SLOT_COUNT).fill(null),
+    // Gold belegt keinen Platz und hat kein Limit
+    gold: 0,
   };
+}
+
+// Gibt Gold dazu (oder zieht es bei negativem Betrag ab, nicht unter 0) und meldet "inventoryChanged".
+export function addGold(inventory, amount) {
+  inventory.gold = Math.max(0, inventory.gold + amount);
+  emit("inventoryChanged", { inventory });
 }
 
 // Gibt zurück, wie viele von diesem Item auf einen Platz passen (1 bei nicht stapelbaren Items).

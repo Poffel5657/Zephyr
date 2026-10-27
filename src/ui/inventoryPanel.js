@@ -24,6 +24,11 @@ export function createInventoryPanel(inventory) {
   title.textContent = "Inventory";
   panel.appendChild(title);
 
+  // Gold belegt keinen Platz, deshalb eine eigene Zeile über dem Raster
+  const gold = document.createElement("div");
+  gold.className = "inventory-gold";
+  panel.appendChild(gold);
+
   const grid = document.createElement("div");
   grid.className = "inventory-grid";
   panel.appendChild(grid);
@@ -163,11 +168,13 @@ export function createInventoryPanel(inventory) {
   on("inventoryChanged", (data) => {
     if (data.inventory === inventory) {
       updateSlots(inventory, slotElements);
+      gold.textContent = `Gold: ${inventory.gold}`;
       updateSelection();
     }
   });
 
   updateSlots(inventory, slotElements);
+  gold.textContent = `Gold: ${inventory.gold}`;
   updateSelection();
 }
 

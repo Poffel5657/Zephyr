@@ -15,6 +15,8 @@ export function createCharacterStats(characterId) {
     level: 1,
     skillLevelUps: 0,
     unspentPoints: 0,
+    // Wie viele Punkte auf jeden Wert verteilt wurden (für das Zurücksetzen mit der Wind-Essenz)
+    spentPoints: { str: 0, vit: 0, zep: 0, agi: 0 },
   };
   character.hp = getMaxHp(character);
   return character;
@@ -96,11 +98,30 @@ export function spendPoints(character, allocation) {
   const oldMaxHp = getMaxHp(character);
   for (const [stat, amount] of Object.entries(allocation)) {
     character.stats[stat] += amount;
+    character.spentPoints[stat] += amount;
   }
   character.unspentPoints -= total;
   addMaxHpGrowth(character, oldMaxHp);
   emit("statsChanged", { character });
   return true;
+}
+
+// Gibt zurück, wie viele Punkte insgesamt verteilt sind.
+export function getSpentPointsTotal(character) {
+  return Object.values(character.spentPoints).reduce((sum, amount) => sum + amount, 0);
+}
+
+// Nimmt alle verteilten Punkte zurück (Werte auf Start, Punkte wieder frei). HP höchstens Max-HP.
+// Die Kosten (Wind-Essenz) zieht das Charakter-Fenster ab.
+export function resetStatPoints(character) {
+  character.unspentPoints += getSpentPointsTotal(character);
+  for (const [stat, amount] of Object.entries(character.spentPoints)) {
+    character.stats[stat] -= amount;
+    character.spentPoints[stat] = 0;
+  }
+  character.hp = Math.min(character.hp, getMaxHp(character));
+  emit("statsChanged", { character });
+  emit("hpChanged", { character });
 }
 
 // Zählt die Skill-Level-Ups mit und lässt den Charakter alle skillLevelsPerLevel aufsteigen.

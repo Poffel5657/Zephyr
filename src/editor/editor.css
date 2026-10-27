@@ -335,7 +335,231 @@ textarea {
   position: relative;
 }
 
+/* ---------- Game-Editor: Reiter, Speichern, Formulare ---------- */
+
+.save-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.save-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 1200px;
+  margin: 0 auto 12px;
+}
+
+.errors {
+  max-width: 1200px;
+  margin: 0 auto 12px;
+  padding: 10px 14px 10px 30px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+select {
+  font: inherit;
+  font-size: 13px;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.data-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.data-layout.no-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entry {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.entry small {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.entry-id-input {
+  width: 100%;
+  font-family: var(--font-mono);
+}
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-head h2 {
+  margin-right: auto;
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg);
+}
+
+button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+button.danger[data-armed="true"] {
+  background: var(--danger);
+  color: #fff;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Verschachtelte Gruppen (z. B. rhythm.keys.up) als eigener Kasten */
+.fields .fields,
+.list .fields {
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.field-row > label {
+  padding-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.field-row > label[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.list-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px;
+  width: 100%;
+}
+
+.list-index {
+  padding-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+button.icon {
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.add-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.add-field input[type="text"] {
+  width: 140px;
+}
+
+.color-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-field input[type="color"] {
+  width: 36px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.color-field input[type="text"] {
+  width: 110px;
+  font-family: var(--font-mono);
+}
+
+.json-box {
+  min-height: 320px;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 720px) {
+  .data-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .field-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .field-row > label {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
   .layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "tools" "stage" "export";

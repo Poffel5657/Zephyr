@@ -55,7 +55,8 @@ export function createCombatHud() {
     for (const combatant of currentOrder) {
       const chip = document.createElement("div");
       chip.className = "combat-order-chip";
-      chip.textContent = combatant.name;
+      // Gegner mit Level, z. B. "Wild Gust Lv 2" (der Spieler ohne)
+      chip.textContent = combatant.alive === undefined ? combatant.name : `${combatant.name} Lv ${combatant.level}`;
 
       if (combatant === currentCombatant) {
         chip.classList.add("combat-order-current");
@@ -157,6 +158,9 @@ export function createCombatHud() {
   });
 
   on("combatTurnUpdated", (data) => {
+    if (data === null) {
+      return;
+    }
     currentOrder = data.order || [];
     currentCombatant = data.current || null;
     renderTurnOrder();

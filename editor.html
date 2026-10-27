@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zephyr Map-Editor</title>
+    <title>Zephyr Game-Editor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -14,19 +14,35 @@
   <body>
     <header class="top">
       <div>
-        <h1>Zephyr Map-Editor</h1>
+        <h1>Zephyr Game-Editor</h1>
         <p class="sub">
-          Draufsicht · 1 Feld = 1 Meter · Zahl im Feld = Höhenstufe
+          Debug-Werkzeug · speichert direkt in <code>src/data/</code> · das
+          Spiel lädt danach von selbst neu
         </p>
       </div>
-      <label class="field" for="map-name"
-        >Name der Insel
-        <input id="map-name" type="text" autocomplete="off" />
-      </label>
+      <div class="save-box">
+        <button type="button" class="primary" id="save-all">Speichern</button>
+        <p class="save-status" id="save-status" role="status"></p>
+      </div>
     </header>
 
-    <main class="layout">
+    <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
+    <ul class="errors" id="errors" hidden></ul>
+
+    <main class="data-layout" id="data-view" hidden>
+      <aside class="panel entries" id="entry-list"></aside>
+      <section class="panel entry-form" id="entry-form"></section>
+    </main>
+
+    <main class="layout" id="map-view">
       <aside class="panel tools">
+        <section>
+          <label class="field" for="map-name"
+            >Name der Insel
+            <input id="map-name" type="text" autocomplete="off" />
+          </label>
+        </section>
+
         <section>
           <h2>Werkzeug</h2>
           <div class="seg" id="tool-buttons"></div>
@@ -40,6 +56,12 @@
         <section id="object-section" hidden>
           <h2>Objekt</h2>
           <div class="seg" id="object-buttons"></div>
+        </section>
+
+        <section id="enemy-section" hidden>
+          <h2>Gegner</h2>
+          <div class="swatches" id="enemy-buttons"></div>
+          <div class="seg" id="enemy-level-buttons"></div>
         </section>
 
         <section>
@@ -92,7 +114,7 @@
       <section class="panel export">
         <h2>JSON</h2>
         <p class="hint">
-          So sieht die Karte als Datei aus. Fürs Spiel kommt sie nach
+          So sieht die Karte als Datei aus. „Speichern“ oben schreibt sie nach
           <code>src/data/maps/</code>.
         </p>
         <textarea
@@ -113,6 +135,6 @@
       </section>
     </main>
 
-    <script type="module" src="/src/editor/editor.js"></script>
+    <script type="module" src="/src/editor/main.js"></script>
   </body>
 </html>

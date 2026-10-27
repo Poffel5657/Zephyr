@@ -13,8 +13,8 @@ const MANUAL_KEY = "zephyr-save-manual";
 // Hierhin kommt ein Spielstand, der nicht geladen werden konnte, damit er nicht überschrieben wird
 const BROKEN_KEY = "zephyr-save-broken";
 // Bei neuen Daten in späteren Phasen hochzählen und in applySaveData alte Stände auffüllen
-// Version 2: aktuelle HP (Phase 8)
-const SAVE_VERSION = 2;
+// Version 2: aktuelle HP (Phase 8), Version 3: Gold und verteilte Punkte (Phase 10)
+const SAVE_VERSION = 3;
 
 // Automatisch speichern: nach Änderungen höchstens einmal pro Sekunde, sonst alle 10 Sekunden
 const CHANGE_DELAY_MS = 1000;
@@ -42,6 +42,8 @@ export function createSaveData(player) {
       skillLevelUps: player.skillLevelUps,
       unspentPoints: player.unspentPoints,
       hp: player.hp,
+      gold: player.inventory.gold,
+      spentPoints: { ...player.spentPoints },
     },
     world: {
       felledTrees: getFelledTrees(),
@@ -248,6 +250,8 @@ function applySaveData(player, data) {
     player.mesh.position.y += standOffset;
   }
 
+  // Ältere Stände ohne Gold starten mit 0 (setSlots meldet danach "inventoryChanged", das zeigt auch das Gold)
+  player.inventory.gold = Number.isInteger(saved.gold) && saved.gold >= 0 ? saved.gold : 0;
   if (Array.isArray(saved.inventory)) {
     setSlots(player.inventory, saved.inventory);
   }
@@ -261,11 +265,16 @@ function applySaveData(player, data) {
   }
   emit("skillsChanged", { character: player });
 
+  // Startwerte merken: Ältere Stände ohne spentPoints rechnen sie daraus zurück (Wert − Startwert)
+  const startStats = { ...player.stats };
   for (const stat of Object.keys(player.stats)) {
     const value = saved.stats?.[stat];
     if (Number.isInteger(value) && value >= 0) {
       player.stats[stat] = value;
     }
+    const spent = saved.spentPoints?.[stat];
+    const validSpent = Number.isInteger(spent) && spent >= 0 && spent <= player.stats[stat];
+    player.spentPoints[stat] = validSpent ? spent : Math.max(0, player.stats[stat] - startStats[stat]);
   }
   if (Number.isInteger(saved.level) && saved.level >= 1) {
     player.level = saved.level;

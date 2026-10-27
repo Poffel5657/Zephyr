@@ -6,14 +6,19 @@ import { emit, on } from "../core/eventBus.js";
 import { gridToWorld, setOccupied } from "../world/grid.js";
 import { getMaxHp } from "../character/character.js";
 
-// Wie hoch die Kugel über dem Feld schwebt
-const FLOAT_HEIGHT = 0.45;
-const RADIUS = 0.3;
+// Platzhalter-Formen je Gegner ("shape" in enemies.json): Mesh und wie hoch es über dem Feld sitzt
+const SHAPES = {
+  gust: { geometry: () => new THREE.SphereGeometry(0.3, 16, 12), height: 0.45 },
+  wisp: { geometry: () => new THREE.SphereGeometry(0.18, 16, 12), height: 0.7 },
+  crab: { geometry: () => new THREE.BoxGeometry(0.65, 0.25, 0.5), height: 0.125 },
+};
+// Pro Level über 1 steigen die Werte eines Gegners um diesen Anteil (Lv 2 = +30 %, Lv 3 = +60 %)
+const STATS_PER_LEVEL = 0.3;
 
 const enemies = [];
 let selectedEnemy = null;
 
-// Baut alle Gegner aus der Karten-Liste ([{ type, x, z }]) und hängt ihre Meshes an die anklickbaren Teile.
+// Baut alle Gegner aus der Karten-Liste ([{ type, x, z, level }], level ist optional) und hängt ihre Meshes an die anklickbaren Teile.
 export function createEnemies(scene, spawns, clickables) {
   for (const spawn of spawns ?? []) {
     const type = ENEMY_TYPES[spawn.type];
@@ -22,19 +27,21 @@ export function createEnemies(scene, spawns, clickables) {
       continue;
     }
 
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(RADIUS, 16, 12),
-      new THREE.MeshStandardMaterial({ color: type.color }),
-    );
+    const shape = SHAPES[type.shape ?? "gust"];
+    const mesh = new THREE.Mesh(shape.geometry(), new THREE.MeshStandardMaterial({ color: type.color }));
     mesh.castShadow = true;
     scene.add(mesh);
 
+    const level = spawn.level ?? type.level;
     const enemy = {
       type: spawn.type,
       name: type.name,
-      stats: { ...type.stats },
-      level: type.level,
+      stats: scaleStats(type.stats, level),
+      level: level,
       aggroRange: type.aggroRange,
+      // 1 = Nahkampf (direkt daneben), mehr = Fernkampf aus so vielen Feldern
+      attackRange: type.attackRange ?? 1,
+      floatHeight: shape.height,
       attackPatterns: type.attackPatterns,
       respawnSeconds: type.respawnSeconds,
       home: { x: spawn.x, z: spawn.z },
@@ -83,7 +90,7 @@ export function placeEnemy(enemy, x, z) {
 // Setzt nur das Mesh an eine Position (für die Lauf-Animation zwischen zwei Feldern).
 export function setEnemyMeshPosition(enemy, position) {
   enemy.mesh.position.copy(position);
-  enemy.mesh.position.y += FLOAT_HEIGHT;
+  enemy.mesh.position.y += enemy.floatHeight;
 }
 
 // Besiegt: unsichtbar, Feld frei, Wiederkommen in respawnSeconds.
@@ -104,4 +111,14 @@ export function resetEnemy(enemy) {
   enemy.mesh.visible = true;
   placeEnemy(enemy, enemy.home.x, enemy.home.z);
   emit("hpChanged", { character: enemy });
+}
+
+// Werte für dieses Level: jeder Wert × (1 + STATS_PER_LEVEL × (Level − 1)), gerundet.
+function scaleStats(stats, level) {
+  const factor = 1 + STATS_PER_LEVEL * (level - 1);
+  const scaled = {};
+  for (const [stat, value] of Object.entries(stats)) {
+    scaled[stat] = Math.round(value * factor);
+  }
+  return scaled;
 }
