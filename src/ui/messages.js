@@ -26,4 +26,5 @@ export function showMessage(text) {
 export function setupMessages() {
   on("inventoryFull", () => showMessage("Your inventory is full"));
   on("skillLevelUp", (data) => showMessage(`${SKILL_DATA.skills[data.skill].name} level ${data.level}!`));
+  on("characterLevelUp", (data) => showMessage(`Level ${data.level}! You have ${data.points} points to spend`));
 }

@@ -307,3 +307,154 @@
 .skills-button:active {
   background-color: rgba(45, 45, 55, 0.95);
 }
+
+/* Charakter-Fenster, Werte und Umschalt-Knopf */
+.character-panel {
+  position: absolute;
+  left: calc(var(--ui-edge) + 210px);
+  bottom: 60px;
+  width: 200px;
+  box-sizing: border-box;
+  padding: 10px;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  z-index: 10;
+}
+
+.character-hidden {
+  display: none;
+}
+
+.character-title {
+  margin-bottom: 6px;
+  color: var(--ui-text);
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.character-level,
+.character-progress,
+.character-hp,
+.character-zep,
+.character-points {
+  margin-bottom: 4px;
+  color: var(--ui-text);
+  font-family: sans-serif;
+  font-size: 12px;
+}
+
+.character-progress {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.character-points {
+  margin-top: 6px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.character-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.character-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ui-text);
+  font-family: sans-serif;
+  font-size: 12px;
+}
+
+.character-stat-label {
+  width: 36px;
+  font-weight: bold;
+}
+
+.character-stat-value {
+  flex: 1;
+  text-align: center;
+}
+
+.character-stat-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.character-stat-button {
+  min-height: 28px;
+  min-width: 28px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  background-color: var(--slot-bg);
+  color: var(--ui-text);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-family: sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.character-stat-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.character-confirm-button {
+  width: 100%;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 6px 12px;
+  background-color: var(--slot-bg);
+  color: var(--ui-text);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-family: sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+}
+
+.character-confirm-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.character-button {
+  position: absolute;
+  left: calc(var(--ui-edge) + 80px);
+  bottom: 16px;
+  padding: 8px 14px;
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-family: sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+}
+
+.character-button:active {
+  background-color: rgba(45, 45, 55, 0.95);
+}
+
+/* Auf schmalen Bildschirmen (Handy) liegt das Charakter-Fenster über dem Skill-Fenster statt daneben */
+@media (max-width: 480px) {
+  .character-panel {
+    left: var(--ui-edge);
+    z-index: 11;
+  }
+}

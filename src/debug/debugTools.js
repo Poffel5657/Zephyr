@@ -4,7 +4,7 @@ import { emit, on } from "../core/eventBus.js";
 
 // Schreibt Events in die Konsole und stellt window.debug für diesen Charakter bereit.
 export function setupDebugTools(character) {
-  const logged = ["itemGained", "xpGained", "skillLevelUp", "inventoryFull", "objectReached", "actionCancelled", "timingResult"];
+  const logged = ["itemGained", "xpGained", "skillLevelUp", "inventoryFull", "objectReached", "actionCancelled", "timingResult", "characterLevelUp", "statsChanged"];
   for (const eventName of logged) {
     on(eventName, (data) => console.log(eventName + ":", data));
   }

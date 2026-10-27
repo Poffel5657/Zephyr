@@ -1,0 +1,8 @@
+{
+  "levelFactor": 0.5,
+  "skillLevelsPerLevel": 5,
+  "pointsPerLevel": 5,
+  "characters": {
+    "hero": { "name": "Hero", "stats": { "str": 5, "vit": 5, "zep": 5, "agi": 5 } }
+  }
+}

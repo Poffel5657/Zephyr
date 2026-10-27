@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { gridToWorld } from "../world/grid.js";
 import { createInventory, addItem } from "../inventory/inventory.js";
 import { createSkills } from "../skills/skills.js";
+import { createCharacterStats } from "../character/character.js";
 
 export function createPlayer(scene, x, z) {
   // 1. Größe festlegen (Gesamthöhe = Mittelteil + 2 × Radius)
@@ -35,5 +36,7 @@ export function createPlayer(scene, x, z) {
     mesh: mesh,
     inventory: inventory,
     skills: createSkills(),
+    // name, stats, level, skillLevelUps, unspentPoints aus characters.json
+    ...createCharacterStats("hero"),
   };
 }
