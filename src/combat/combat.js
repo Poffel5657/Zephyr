@@ -8,13 +8,16 @@ import { addUpdate } from "../core/loop.js";
 import { getTile, gridToWorld, setOccupied, getGridSize } from "../world/grid.js";
 import { findPath, findPathToObject, MAX_STEP_UP } from "../world/pathfinding.js";
 import { getDamage, getDodgeChance, getMoveRange, takeDamage } from "../character/character.js";
-import { isMoving, walkPath, turnTowards } from "../player/movement.js";
+import { isMoving, walkPath, turnTowards, jumpTo } from "../player/movement.js";
+import { getClickMode } from "../core/clickMode.js";
 import { getEnemies, removeEnemy, resetEnemy, setEnemyMeshPosition, placeEnemy } from "../enemies/enemies.js";
 import { showMessage } from "../ui/messages.js";
 import { tickCooldowns, startCooldown, getCooldown, hasTechnique, getTechnique } from "./techniques.js";
 import { startRhythm, stopRhythm } from "./rhythm.js";
 
 const FLEE_DISTANCE = CHARACTER_DATA.combat.fleeDistance;
+// Wer höher steht als sein Ziel, macht so viel mehr Schaden (0.25 = +25 %)
+const HEIGHT_BONUS = CHARACTER_DATA.combat.heightBonus;
 // Pausen im Gegner-Zug (Sekunden), damit man sieht, was passiert
 const ENEMY_THINK_TIME = 0.4;
 const ENEMY_AFTER_ACTION_TIME = 0.4;
@@ -146,7 +149,8 @@ export function setupCombat(character) {
   on("enemyClicked", ({ enemy }) => openActionMenu(enemy));
   on("attackIntent", ({ enemy }) => openActionMenu(enemy));
   on("tileClicked", (tile) => {
-    if (combat !== null) {
+    // Im Sprung-Modus gehört der Klick dem Sprung (Windriding)
+    if (combat !== null && getClickMode() === null) {
       playerMove(tile);
     }
   });
@@ -314,6 +318,32 @@ function openActionMenu(enemy) {
   emit("actionMenuOpened", { enemy });
 }
 
+// Sprung im Kampf (Windriding): kostet moveCost Felder, Aktion bleibt frei. Gibt true zurück, wenn er startet.
+export function playerJump(tile, moveCost, ability, onLanded) {
+  if (!isPlayerTurn() || combat.moveLeft < moveCost) {
+    return false;
+  }
+  combat.moveLeft -= moveCost;
+  combat.busy = true;
+  setOccupied(player.x, player.z, false);
+  emitTurnUpdated();
+  const started = jumpTo(tile, ability, () => {
+    if (combat !== null) {
+      setOccupied(player.x, player.z, true);
+      combat.busy = false;
+      emitTurnUpdated();
+    }
+    onLanded();
+  });
+  if (!started) {
+    combat.moveLeft += moveCost;
+    combat.busy = false;
+    setOccupied(player.x, player.z, true);
+    emitTurnUpdated();
+  }
+  return started;
+}
+
 // Lässt den Spieler einen Weg im Kampf laufen und zieht die Felder ab.
 function walkPlayer(path, onDone) {
   combat.moveLeft -= path.length;
@@ -344,10 +374,10 @@ async function playerCombo(enemy, techniqueId) {
 
   const hits = [];
   const hit = (factor, index) => {
-    const damage = getScaledDamage(player, factor);
+    const damage = getScaledDamage(player, enemy, factor);
     takeDamage(enemy, damage);
     hits.push(damage);
-    emit("attackResolved", { attacker: player, target: enemy, damage, dodged: false, technique: technique.id, hit: index });
+    emit("attackResolved", { attacker: player, target: enemy, damage, dodged: false, technique: technique.id, hit: index, highGround: isHigher(player, enemy) });
   };
 
   // Ausweichen gilt für die ganze Combo
@@ -375,7 +405,7 @@ async function playerCombo(enemy, techniqueId) {
   // Kurz warten, damit man den Treffer sieht, bevor der Gegner verschwindet
   await wait(AFTER_ATTACK_TIME);
 
-  emit("comboEnded", { attacker: player, target: enemy, technique: technique.id, results, hits, dodged });
+  emit("comboEnded", { attacker: player, target: enemy, technique: technique.id, results, hits, dodged, highGround: isHigher(player, enemy) });
   if (combat === null) {
     return;
   }
@@ -414,12 +444,12 @@ async function enemyAttack(enemy) {
     target: player.mesh,
     stopAtMiss: false,
     onBeat: (index, result) => {
-      const fullDamage = getScaledDamage(enemy, pattern[index].damage);
+      const fullDamage = getScaledDamage(enemy, player, pattern[index].damage);
       const damage = BLOCK_DAMAGE[result](fullDamage);
       if (damage > 0) {
         takeDamage(player, damage);
       }
-      emit("attackResolved", { attacker: enemy, target: player, damage, dodged: false, block: result });
+      emit("attackResolved", { attacker: enemy, target: player, damage, dodged: false, block: result, highGround: isHigher(enemy, player) });
       if (player.hp === 0) {
         stopRhythm();
       }
@@ -555,8 +585,15 @@ function faceTowards(fighter, target) {
 }
 
 // Ein Schlag mit diesem Anteil vom normalen Schaden (z. B. 0.5 für einen Zusatzschlag), mindestens 1.
-function getScaledDamage(attacker, factor) {
-  return Math.max(1, Math.round(getDamage(attacker) * factor));
+// Von oben (Angreifer steht höher als das Ziel) gibt es den Höhen-Bonus.
+function getScaledDamage(attacker, target, factor) {
+  const heightFactor = isHigher(attacker, target) ? 1 + HEIGHT_BONUS : 1;
+  return Math.max(1, Math.round(getDamage(attacker) * factor * heightFactor));
+}
+
+// Steht a auf einem höheren Feld als b?
+function isHigher(a, b) {
+  return getTile(a.x, a.z).height > getTile(b.x, b.z).height;
 }
 
 // Nahkampf: direkt daneben. Fernkampf: höchstens attackRange Felder entfernt.

@@ -36,6 +36,8 @@ export function createPlayer(scene, x, z) {
     mesh: mesh,
     inventory: inventory,
     skills: createSkills(),
+    // Spielfortschritt: geöffnete Truhen (mit Rest-Inhalt) und Items, die nur einmal fallen (z. B. der Schlüssel)
+    progress: { chests: {}, onceLoot: [] },
     // name, stats, level, skillLevelUps, unspentPoints aus characters.json
     ...createCharacterStats("hero"),
   };

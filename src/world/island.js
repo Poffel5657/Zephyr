@@ -1,12 +1,12 @@
 // Baut die Insel aus der geladenen Map: eine Säule pro Feld, plus Objekte obendrauf.
 import * as THREE from "three";
 import { getTile, getGridSize, gridToWorld, STEP_HEIGHT } from "./grid.js";
-import { buildObject, setTreeFelled } from "./objects.js";
+import { buildObject, setTreeFelled, setChestOpen } from "./objects.js";
 import { on } from "../core/eventBus.js";
 import TILE_TYPES from "../data/tileTypes.json";
 
 // Fügt Säulen und Objekte zur Szene hinzu und gibt die Liste aller anklickbaren Teile zurück.
-// Gefällte Bäume werden per "treeFelled" / "treeGrown" zum Stumpf und wieder zum Baum.
+// Gefällte Bäume werden per "treeFelled" / "treeGrown" zum Stumpf und wieder zum Baum, Truhen per "chestOpened" auf.
 export function buildIsland(scene) {
   const grid = getGridSize();
   const clickables = [];
@@ -43,6 +43,13 @@ export function buildIsland(scene) {
 
   on("treeFelled", ({ x, z }) => setTreeFelled(objectsByTile.get(x + "," + z), true));
   on("treeGrown", ({ x, z }) => setTreeFelled(objectsByTile.get(x + "," + z), false));
+  on("chestOpened", ({ x, z }) => {
+    // Ein alter Spielstand kann eine Truhe kennen, die auf der Karte nicht mehr steht
+    const chest = objectsByTile.get(x + "," + z);
+    if (chest?.userData.lidHinge !== undefined) {
+      setChestOpen(chest);
+    }
+  });
 
   return clickables;
 }

@@ -5,6 +5,7 @@ import { emit, on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
 import { getTile, gridToWorld } from "../world/grid.js";
 import { findPath, findPathToObject } from "../world/pathfinding.js";
+import { getClickMode } from "../core/clickMode.js";
 
 // Wie viele Felder der Spieler pro Sekunde läuft.
 const TILES_PER_SECOND = 3;
@@ -18,6 +19,8 @@ let targetObject = null;
 let inCombat = false;
 // Wird aufgerufen, wenn ein Weg aus walkPath zu Ende gelaufen ist
 let onPathDone = null;
+// Laufender Sprung: { from, to, time, duration, arcHeight, onDone } (null = kein Sprung)
+let jump = null;
 
 // Meldet den Spieler für Klicks und beim Loop an (erst nach loadGrid und createPlayer aufrufen).
 export function setupPlayerMovement(movingPlayer) {
@@ -37,9 +40,22 @@ export function setupPlayerMovement(movingPlayer) {
   addUpdate(updateMovement);
 }
 
-// Gibt zurück, ob der Spieler gerade läuft.
+// Gibt zurück, ob der Spieler gerade läuft oder springt.
 export function isMoving() {
-  return target !== null;
+  return target !== null || jump !== null;
+}
+
+// Springt in einem Bogen auf ein Feld (Doppelsprung). Nur, wenn der Spieler gerade steht.
+// duration in Sekunden, arcHeight = wie hoch der Bogen über dem höheren Feld geht.
+export function jumpTo(tile, { duration, arcHeight }, onDone) {
+  if (isMoving()) {
+    return false;
+  }
+  path = [];
+  targetObject = null;
+  turnTowards(tile);
+  jump = { from: { x: player.x, z: player.z }, to: { x: tile.x, z: tile.z }, time: 0, duration, arcHeight, onDone };
+  return true;
 }
 
 // Läuft einen fertigen Weg ab (für den Kampf) und ruft danach onDone auf.
@@ -72,7 +88,8 @@ function onAttackIntent({ enemy }) {
 // Sucht einen neuen Weg zum geklickten Feld (beim Laufen ab dem Feld, auf das er gerade zuläuft).
 // Steht ein Objekt auf dem Feld, geht der Weg zum nächsten erreichbaren Nachbarfeld.
 function onTileClicked(tile) {
-  if (inCombat) {
+  // Im Kampf steuert der Kampf das Laufen, im Sprung-Modus gehört der Klick dem Sprung
+  if (inCombat || getClickMode() !== null) {
     return;
   }
   const from = target !== null ? target : { x: player.x, z: player.z };
@@ -113,6 +130,10 @@ function startNextStep() {
 
 // Bewegt den Spieler jedes Bild ein Stück zum Ziel-Feld, samt Höhe beim Hoch- und Runterlaufen.
 function updateMovement(deltaTime) {
+  if (jump !== null) {
+    updateJump(deltaTime);
+    return;
+  }
   if (target === null) {
     return;
   }
@@ -129,6 +150,28 @@ function updateMovement(deltaTime) {
   const fromPosition = gridToWorld(player.x, player.z);
   const toPosition = gridToWorld(target.x, target.z);
   placeMesh(fromPosition.lerp(toPosition, progress));
+}
+
+// Sprung-Bogen: waagerecht gleichmäßig, senkrecht eine Parabel über dem höheren der beiden Felder.
+function updateJump(deltaTime) {
+  jump.time = Math.min(jump.duration, jump.time + deltaTime);
+  const t = jump.time / jump.duration;
+  const from = gridToWorld(jump.from.x, jump.from.z);
+  const to = gridToWorld(jump.to.x, jump.to.z);
+  const top = Math.max(from.y, to.y) + jump.arcHeight;
+  const position = from.clone().lerp(to, t);
+  // Parabel durch Start (t=0), Ziel (t=1) und den höchsten Punkt dazwischen
+  position.y = (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * (2 * top - (from.y + to.y) / 2) + t * t * to.y;
+  placeMesh(position);
+  if (t < 1) {
+    return;
+  }
+  player.x = jump.to.x;
+  player.z = jump.to.z;
+  placeMesh(to);
+  const { onDone } = jump;
+  jump = null;
+  onDone();
 }
 
 // Dreht den Spieler zum Objekt und meldet, dass er davor steht.

@@ -4,7 +4,7 @@
 // Gegner-Formen, die enemies.js kennt
 const SHAPES = ["gust", "wisp", "crab"];
 // Objekte, die der Map-Editor setzen kann
-const OBJECTS = ["tree", "rock"];
+const OBJECTS = ["tree", "rock", "chest"];
 // Items, die der Code direkt benutzt (Start-Axt, Reset-Kosten)
 const REQUIRED_ITEMS = ["copper_axe", "wind_essence"];
 
@@ -99,6 +99,15 @@ export function validateGameData(data) {
   check(isNumber(rhythm.perfectWindow) && isNumber(rhythm.goodWindow) && rhythm.perfectWindow < rhythm.goodWindow, `Rhythmus: "perfectWindow" muss kleiner als "goodWindow" sein`);
   for (const [key, info] of Object.entries(rhythm.keys ?? {})) {
     check(isColor(info.color) && Array.isArray(info.codes) && info.codes.length > 0, `Rhythmus, Taste ${key}: Farbe und Tasten-Codes nötig`);
+  }
+
+  for (const [id, chest] of Object.entries(data["chests.json"] ?? {})) {
+    check(items[chest.key] !== undefined, `Truhe ${id}: Schlüssel-Item "${chest.key}" gibt es nicht`);
+    const contents = chest.contents ?? {};
+    check(isInt(contents.gold) && Array.isArray(contents.items) && (contents.gold > 0 || contents.items.length > 0), `Truhe ${id}: braucht Inhalt (Gold oder Items)`);
+    for (const entry of contents.items ?? []) {
+      check(items[entry.item] !== undefined && isInt(entry.amount, 1), `Truhe ${id}: Inhalt "${entry.item}" gibt es nicht oder Menge ungültig`);
+    }
   }
 
   for (const [id, type] of Object.entries(tileTypes)) {

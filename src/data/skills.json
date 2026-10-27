@@ -17,6 +17,24 @@
           "speed": 1.2
         }
       }
+    },
+    "windriding": {
+      "name": "Windriding",
+      "jumpXp": 15,
+      "baseCharges": 2,
+      "levelsPerCharge": 10,
+      "rechargeSeconds": 5,
+      "abilities": {
+        "double_jump": {
+          "name": "Double Jump",
+          "maxDistance": 2,
+          "maxUp": 2,
+          "maxDown": 3,
+          "combatMoveCost": 2,
+          "duration": 0.5,
+          "arcHeight": 1.2
+        }
+      }
     }
   }
 }

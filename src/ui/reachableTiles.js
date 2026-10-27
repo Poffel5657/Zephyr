@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { on } from "../core/eventBus.js";
 import { gridToWorld } from "../world/grid.js";
 import { getReachableTiles } from "../combat/combat.js";
+import { getClickMode } from "../core/clickMode.js";
 
 const MARKER_LIFT = 0.005;
 const MARKER_COLOR = "#5ab4ff";
@@ -14,7 +15,8 @@ export function createReachableTiles(scene) {
   const markers = [];
 
   const update = () => {
-    const tiles = getReachableTiles();
+    // Beim Sprung-Zielen nur die Sprung-Felder zeigen
+    const tiles = getClickMode() === null ? getReachableTiles() : [];
     // Fehlende Markierungen nachbauen
     while (markers.length < tiles.length) {
       const marker = new THREE.Mesh(geometry, material);
@@ -31,7 +33,7 @@ export function createReachableTiles(scene) {
     });
   };
 
-  for (const eventName of ["combatTurnUpdated", "turnStarted", "combatEnded"]) {
+  for (const eventName of ["combatTurnUpdated", "turnStarted", "combatEnded", "clickModeChanged"]) {
     on(eventName, update);
   }
 }

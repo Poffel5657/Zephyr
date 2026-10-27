@@ -25,6 +25,7 @@ const MAP_FILE = "maps/start-island.json";
 const OBJECTS = {
   tree: "Baum",
   rock: "Fels",
+  chest: "Truhe",
 };
 
 const TOOLS = {
@@ -314,6 +315,18 @@ function drawTile(tile, x, z) {
       Math.PI * 2,
     );
     ctx.fill();
+  } else if (tile.object === "chest") {
+    // Truhe: brauner Kasten mit hellerem Deckel und goldenem Schloss
+    const w = cell * 0.56;
+    const h = cell * 0.4;
+    const left = px + (cell - w) / 2;
+    const topZ = pz + (cell - h) / 2;
+    ctx.fillStyle = "#7a4e24";
+    ctx.fillRect(left, topZ, w, h);
+    ctx.fillStyle = "#a06a34";
+    ctx.fillRect(left, topZ, w, h * 0.35);
+    ctx.fillStyle = "#e0b33a";
+    ctx.fillRect(px + cell / 2 - cell * 0.05, topZ + h * 0.3, cell * 0.1, cell * 0.12);
   } else if (tile.object === "rock") {
     const cx = px + cell / 2;
     const cz = pz + cell / 2;

@@ -9,9 +9,8 @@
     "maxDodge": 0.3,
     "baseMove": 2,
     "agiPerMove": 5,
-    "fleeDistance": 6
+    "fleeDistance": 6,
+    "heightBonus": 0.25
   },
-  "characters": {
-    "hero": { "name": "Hero", "stats": { "str": 5, "vit": 5, "zep": 5, "agi": 5 } }
-  }
+  "characters": { "hero": { "name": "Hero", "stats": { "str": 5, "vit": 5, "zep": 5, "agi": 5 } } }
 }

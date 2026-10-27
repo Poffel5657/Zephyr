@@ -68,7 +68,7 @@ export function setupLoot(player, scene, clickables) {
   };
 
   on("enemyDefeated", ({ enemy }) => {
-    fightLoot.push({ loot: rollLoot(enemy), x: enemy.x, z: enemy.z });
+    fightLoot.push({ loot: rollLoot(enemy, player), x: enemy.x, z: enemy.z });
   });
 
   on("combatStarted", () => {

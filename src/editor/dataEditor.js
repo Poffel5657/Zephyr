@@ -9,6 +9,7 @@ export const SECTIONS = [
   { id: "enemies", file: "enemies.json", label: "Gegner", entries: true },
   { id: "techniques", file: "techniques.json", label: "Techniken", entries: true },
   { id: "tiles", file: "tileTypes.json", label: "Bodentypen", entries: true },
+  { id: "chests", file: "chests.json", label: "Truhen", entries: true },
   { id: "character", file: "characters.json", label: "Charakter" },
   { id: "skills", file: "skills.json", label: "Skills" },
   { id: "rhythm", file: "rhythm.json", label: "Rhythmus" },
@@ -21,6 +22,11 @@ const OPTIONS = {
   log: () => Object.keys(data["items.json"]),
   skill: () => Object.keys(data["skills.json"].skills),
   shape: () => ["gust", "wisp", "crab"],
+};
+
+// Ausnahmen pro Datei: Bei Truhen ist "key" das Schlüssel-Item, keine Rhythmus-Taste
+const FILE_OPTIONS = {
+  "chests.json": { key: () => Object.keys(data["items.json"]) },
 };
 
 // Vorlagen, wenn man in einer Liste "+ Eintrag" drückt (sonst wird der letzte Eintrag kopiert)
@@ -263,7 +269,7 @@ function renderValue(value, key, file, set) {
     });
     return input;
   }
-  const options = OPTIONS[key]?.();
+  const options = (FILE_OPTIONS[file]?.[key] ?? OPTIONS[key])?.();
   if (options !== undefined) {
     const select = document.createElement("select");
     for (const option of new Set([...options, value])) {

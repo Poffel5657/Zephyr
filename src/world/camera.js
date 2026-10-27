@@ -1,4 +1,5 @@
 // Kamera, die man mit rechter/mittlerer Maustaste um die Insel dreht und mit dem Mausrad zoomt.
+// Der Drehpunkt folgt weich einem Objekt (z. B. dem Spieler), Drehung und Zoom bleiben dabei erhalten.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { getGridSize } from "./grid.js";
@@ -16,6 +17,11 @@ export const camera = new THREE.PerspectiveCamera(
 );
 
 let controls = null;
+// Objekt, dem die Kamera folgt (null = bleibt stehen)
+let followed = null;
+// Wie schnell der Drehpunkt hinterhergleitet (größer = schneller)
+const FOLLOW_SPEED = 5;
+const step = new THREE.Vector3();
 
 // Richtet die Maus-Steuerung ein (erst nach loadGrid aufrufen); links bleibt frei fürs Laufen.
 export function setupCamera(canvas) {
@@ -50,9 +56,27 @@ export function focusOnIsland() {
   controls.update();
 }
 
-// Aktualisiert die Steuerung jedes Bild (nötig für das weiche Nachgleiten).
-export function updateCamera() {
+// Lässt die Kamera diesem Objekt folgen. snap = sofort hinspringen statt hingleiten.
+export function followWithCamera(object, snap = false) {
+  followed = object;
+  if (snap) {
+    moveFocus(1);
+  }
+}
+
+// Aktualisiert die Steuerung jedes Bild: Drehpunkt zum verfolgten Objekt gleiten lassen, dann weiches Nachgleiten.
+export function updateCamera(deltaTime) {
+  if (followed !== null) {
+    moveFocus(1 - Math.exp(-FOLLOW_SPEED * deltaTime));
+  }
   controls.update();
+}
+
+// Schiebt Drehpunkt und Kamera gemeinsam um diesen Anteil Richtung Objekt (so bleibt der Blickwinkel gleich).
+function moveFocus(amount) {
+  step.copy(followed.position).sub(controls.target).multiplyScalar(amount);
+  controls.target.add(step);
+  camera.position.add(step);
 }
 
 // Passt das Seitenverhältnis an die neue Fenstergröße an.

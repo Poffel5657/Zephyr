@@ -1,0 +1,7 @@
+{
+  "chest": {
+    "name": "Chest",
+    "key": "old_key",
+    "contents": { "gold": 0, "items": [{ "item": "wind_boots", "amount": 1 }] }
+  }
+}

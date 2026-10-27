@@ -29,6 +29,10 @@ import { createHpBars } from "../ui/hpBars.js";
 import { setupRhythm } from "../combat/rhythm.js";
 import { createActionMenu } from "../ui/actionMenu.js";
 import { setupLoot } from "../items/lootBags.js";
+import { setupWindriding } from "../skills/windriding.js";
+import { createRidingMenu } from "../ui/ridingMenu.js";
+import { setupChests } from "./chests.js";
+import { setupCameraFollow } from "./cameraFollow.js";
 import { loadGame, setupAutoSave } from "../save/save.js";
 import { setupSaveIcon } from "../ui/saveIcon.js";
 import { createMenu } from "../ui/menu.js";
@@ -66,6 +70,9 @@ createHpBars(player, enemies, camera);
 setupRhythm(camera);
 createActionMenu(player, camera);
 setupLoot(player, scene, clickables);
+setupWindriding(player);
+createRidingMenu(player, scene);
+setupChests(player);
 setupCamera(renderer.domElement);
 setupInput(camera, renderer.domElement, clickables);
 createTileMarker(scene);
@@ -73,6 +80,8 @@ setupSaveIcon();
 createMenu(player);
 // Laden erst, wenn Insel und Fenster stehen (Stümpfe und Fenster brauchen sie), danach automatisch speichern
 loadGame(player);
+// Nach dem Laden, damit die Kamera gleich an der gespeicherten Position steht
+setupCameraFollow(player);
 setupAutoSave(player);
 
 // Zeichnet ein Bild der Szene aus Sicht der Kamera.

@@ -82,5 +82,22 @@
     "tags": ["rare"],
     "color": "#6ff0d2",
     "sprite": "sprites/items/wind_essence.png"
+  },
+  "wind_boots": {
+    "name": "Wind Boots",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["tool", "equippable"],
+    "skill": "windriding",
+    "color": "#9fe3ff",
+    "sprite": "sprites/items/wind_boots.png"
+  },
+  "old_key": {
+    "name": "Old Key",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["key"],
+    "color": "#c9a227",
+    "sprite": "sprites/items/old_key.png"
   }
 }

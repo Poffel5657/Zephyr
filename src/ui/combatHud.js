@@ -187,9 +187,9 @@ export function createCombatHud() {
     } else if (data.block === "perfect") {
       addLogMessage("Perfect block!");
     } else if (data.block === "good") {
-      addLogMessage(`Blocked half: ${data.attacker.name} hits ${data.target.name} for ${data.damage}`);
+      addLogMessage(`Blocked half: ${data.attacker.name} hits ${data.target.name} for ${data.damage}${highGroundText(data)}`);
     } else {
-      addLogMessage(`${data.attacker.name} hits ${data.target.name} for ${data.damage}`);
+      addLogMessage(`${data.attacker.name} hits ${data.target.name} for ${data.damage}${highGroundText(data)}`);
     }
   });
 
@@ -200,12 +200,12 @@ export function createCombatHud() {
     }
     // Normaler Angriff ohne Rhythmus: ein einfacher Schlag
     if (TECHNIQUES[data.technique].pattern.length === 0) {
-      addLogMessage(`${data.attacker.name} hits ${data.target.name} for ${data.hits[0]}`);
+      addLogMessage(`${data.attacker.name} hits ${data.target.name} for ${data.hits[0]}${highGroundText(data)}`);
       return;
     }
     const total = data.hits.reduce((sum, damage) => sum + damage, 0);
     const hitText = data.hits.length === 1 ? "1 hit" : `${data.hits.length} hits`;
-    addLogMessage(`${data.attacker.name}'s ${TECHNIQUES[data.technique].name}: ${hitText}, ${total} damage`);
+    addLogMessage(`${data.attacker.name}'s ${TECHNIQUES[data.technique].name}: ${hitText}, ${total} damage${highGroundText(data)}`);
   });
 
   on("itemEaten", (data) => {
@@ -234,4 +234,9 @@ export function createCombatHud() {
       updateEnemyInfo();
     }
   });
+}
+
+// Zusatz im Log, wenn der Angreifer von oben zugeschlagen hat (Höhen-Bonus).
+function highGroundText(data) {
+  return data.highGround ? " (high ground!)" : "";
 }

@@ -13,8 +13,9 @@ const MANUAL_KEY = "zephyr-save-manual";
 // Hierhin kommt ein Spielstand, der nicht geladen werden konnte, damit er nicht überschrieben wird
 const BROKEN_KEY = "zephyr-save-broken";
 // Bei neuen Daten in späteren Phasen hochzählen und in applySaveData alte Stände auffüllen
-// Version 2: aktuelle HP (Phase 8), Version 3: Gold und verteilte Punkte (Phase 10)
-const SAVE_VERSION = 3;
+// Version 2: aktuelle HP (Phase 8), Version 3: Gold und verteilte Punkte (Phase 10),
+// Version 4: Fortschritt (geöffnete Truhen, Einmal-Loot) (Phase 11)
+const SAVE_VERSION = 4;
 
 // Automatisch speichern: nach Änderungen höchstens einmal pro Sekunde, sonst alle 10 Sekunden
 const CHANGE_DELAY_MS = 1000;
@@ -44,6 +45,7 @@ export function createSaveData(player) {
       hp: player.hp,
       gold: player.inventory.gold,
       spentPoints: { ...player.spentPoints },
+      progress: structuredClone(player.progress),
     },
     world: {
       felledTrees: getFelledTrees(),
@@ -173,7 +175,7 @@ export function setupAutoSave(player) {
     }
   };
 
-  for (const eventName of ["inventoryChanged", "skillsChanged", "statsChanged", "hpChanged"]) {
+  for (const eventName of ["inventoryChanged", "skillsChanged", "statsChanged", "hpChanged", "progressChanged"]) {
     on(eventName, saveSoon);
   }
 
@@ -290,6 +292,16 @@ function applySaveData(player, data) {
   player.hp = Number.isInteger(saved.hp) && saved.hp >= 1 ? Math.min(saved.hp, maxHp) : maxHp;
   emit("statsChanged", { character: player });
   emit("hpChanged", { character: player });
+
+  // Fortschritt: nur gültige Truhen-Inhalte ({ gold, items }) und Item-Namen übernehmen
+  const progress = saved.progress ?? {};
+  for (const [key, loot] of Object.entries(progress.chests ?? {})) {
+    if (/^\d+,\d+$/.test(key) && Number.isInteger(loot?.gold) && Array.isArray(loot.items)) {
+      player.progress.chests[key] = { gold: loot.gold, items: loot.items.filter((entry) => typeof entry?.item === "string" && Number.isInteger(entry.amount)) };
+    }
+  }
+  player.progress.onceLoot = Array.isArray(progress.onceLoot) ? progress.onceLoot.filter((item) => typeof item === "string") : [];
+  emit("progressLoaded", { character: player });
 
   if (Array.isArray(data.world?.felledTrees)) {
     setFelledTrees(data.world.felledTrees);

@@ -67,9 +67,40 @@ function buildRock(scene, position) {
   return rock;
 }
 
+// Baut eine Platzhalter-Truhe: Kasten + Deckel (der Deckel klappt beim Öffnen auf).
+function buildChest(scene, position) {
+  const chest = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({ color: "#7a4e24" });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.3, 0.38), wood);
+  box.position.y = 0.15;
+  box.castShadow = true;
+  box.receiveShadow = true;
+  chest.add(box);
+
+  // Der Deckel dreht sich um seine hintere Kante
+  const hinge = new THREE.Group();
+  hinge.position.set(0, 0.3, -0.19);
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(0.57, 0.1, 0.4), new THREE.MeshStandardMaterial({ color: "#8f5d2c" }));
+  lid.position.set(0, 0.05, 0.2);
+  lid.castShadow = true;
+  hinge.add(lid);
+  chest.add(hinge);
+  chest.userData.lidHinge = hinge;
+
+  chest.position.copy(position);
+  scene.add(chest);
+  return chest;
+}
+
+// Klappt den Deckel einer Truhe auf.
+export function setChestOpen(chest) {
+  chest.userData.lidHinge.rotation.x = -Math.PI * 0.6;
+}
+
 const OBJECT_BUILDERS = {
   tree: buildTree,
   rock: buildRock,
+  chest: buildChest,
 };
 
 // Baut das Objekt mit diesem Namen und gibt es zurück (null + Warnung bei unbekanntem Namen).
