@@ -5,6 +5,7 @@ import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
 import { getLevel } from "./skills.js";
+import { isInside, getTile } from "../world/grid.js";
 import { getSlots, canAddItem } from "../inventory/inventory.js";
 import { startTimingBar, stopTimingBar } from "../ui/timingBar.js";
 import { showMessage } from "../ui/messages.js";
@@ -71,6 +72,23 @@ export function setupWoodcutting(character) {
   });
 
   addUpdate(updateFelledTrees);
+}
+
+// Gibt die gefällten Bäume mit Restzeit zurück (für den Spielstand).
+export function getFelledTrees() {
+  return [...felledTrees.values()].map(({ x, z, timeLeft }) => ({ x, z, timeLeft }));
+}
+
+// Macht diese Bäume wieder zu Stümpfen mit Restzeit (beim Laden; erst nach buildIsland aufrufen).
+// Einträge, auf deren Feld kein Baum mehr steht (z. B. Karte geändert), werden übersprungen.
+export function setFelledTrees(list) {
+  for (const { x, z, timeLeft } of list) {
+    if (!isInside(x, z) || TREES[getTile(x, z).object] === undefined || !(timeLeft > 0)) {
+      continue;
+    }
+    felledTrees.set(treeKey(x, z), { x, z, timeLeft });
+    emit("treeFelled", { x, z });
+  }
 }
 
 // Zählt bei gefällten Bäumen die Zeit herunter und lässt sie nachwachsen.

@@ -19,6 +19,9 @@ import { setupSkillEvents } from "../skills/skills.js";
 import { setupTimingBar } from "../ui/timingBar.js";
 import { setupWoodcutting } from "../skills/woodcutting.js";
 import { setupCharacterEvents } from "../character/character.js";
+import { loadGame, setupAutoSave } from "../save/save.js";
+import { setupSaveIcon } from "../ui/saveIcon.js";
+import { createMenu } from "../ui/menu.js";
 
 export const scene = new THREE.Scene();
 export const renderer = new THREE.WebGLRenderer();
@@ -46,6 +49,11 @@ const clickables = buildIsland(scene);
 setupCamera(renderer.domElement);
 setupInput(camera, renderer.domElement, clickables);
 createTileMarker(scene);
+setupSaveIcon();
+createMenu(player);
+// Laden erst, wenn Insel und Fenster stehen (Stümpfe und Fenster brauchen sie), danach automatisch speichern
+loadGame(player);
+setupAutoSave(player);
 
 // Zeichnet ein Bild der Szene aus Sicht der Kamera.
 export function renderWorld() {

@@ -139,6 +139,20 @@ export function moveSlot(inventory, fromIndex, toIndex) {
   emit("inventoryChanged", { inventory });
 }
 
+// Ersetzt alle Plätze auf einmal (z. B. beim Laden eines Spielstands).
+// Unbekannte Items werden zu leeren Plätzen, Mengen werden auf 1 bis maxStack begrenzt.
+export function setSlots(inventory, slots) {
+  for (let index = 0; index < SLOT_COUNT; index++) {
+    const slot = slots[index];
+    if (slot && ITEMS[slot.item] !== undefined && Number.isInteger(slot.amount) && slot.amount > 0) {
+      inventory.slots[index] = { item: slot.item, amount: Math.min(slot.amount, getMaxStack(slot.item)) };
+    } else {
+      inventory.slots[index] = null;
+    }
+  }
+  emit("inventoryChanged", { inventory });
+}
+
 // Gibt die Liste aller Plätze zurück.
 export function getSlots(inventory) {
   return inventory.slots;
