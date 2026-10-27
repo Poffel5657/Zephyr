@@ -1,6 +1,7 @@
 // Loot-Fenster in der Bildschirmmitte: Gold und Items einzeln ("Take") oder alles ("Take all") nehmen.
 // Was nicht ins Inventar passt, bleibt stehen. Beim Schließen bekommt onClose den Rest (für den Beutel am Boden).
 import "./ui.css";
+import "./lootWindow.css";
 import ITEMS from "../data/items.json";
 import { addItem, addGold, canAddItem } from "../inventory/inventory.js";
 import { showMessage } from "./messages.js";
@@ -25,7 +26,7 @@ export function openLootWindow(inventory, loot, onClose) {
 }
 
 // Schließt das Fenster und gibt den Rest an onClose weiter.
-export function closeLootWindow() {
+function closeLootWindow() {
   if (current === null) {
     return;
   }

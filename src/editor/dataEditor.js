@@ -53,7 +53,7 @@ const HINTS = {
   approachTime: "So lange ist ein Ring vorher sichtbar (Sekunden)",
   perfectWindow: "± Sekunden für Perfect",
   goodWindow: "± Sekunden für Good",
-  levelFactor: "Formel: Wert × max(1, Level × levelFactor)",
+  levelFactor: "Level-Faktor = 1 + (Level − 1) × levelFactor (für HP, ZEP und Schaden)",
 };
 
 const FIELD_TYPES = { number: "Zahl", text: "Text", boolean: "Ja/Nein", list: "Liste" };

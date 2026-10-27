@@ -1,146 +1,38 @@
 // Rundenbasierter Kampf direkt in der Welt: Start (Rechtsklick oder Aggro), Reihenfolge nach AGI,
-// Züge mit Bewegung + einer Aktion, Angriffe als Rhythmus-Combos (eigene) bzw. mit Block-Timing (Gegner),
-// Gegner-KI und das Ende (Sieg, Niederlage, Flucht).
+// Runden und Züge, außerhalb vom Kampf Aggro und Wiederkommen besiegter Gegner.
+// Die Teile stehen in eigenen Dateien: combatState (Zustand), combatRules (Regeln), playerActions (Spieler-Zug),
+// enemyTurn (Gegner-Zug), combatEnd (Sieg, Niederlage, Flucht). Andere Module importieren nur diese Datei.
 // Alles läuft über Events, damit UI, Speichern und Welt nur zuhören müssen.
 import CHARACTER_DATA from "../data/characters.json";
 import { emit, on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
-import { getTile, gridToWorld, setOccupied, getGridSize } from "../world/grid.js";
-import { findPath, findPathToObject, MAX_STEP_UP } from "../world/pathfinding.js";
-import { getDamage, getDodgeChance, getMoveRange, takeDamage } from "../character/character.js";
-import { isMoving, walkPath, turnTowards, jumpTo } from "../player/movement.js";
+import { setOccupied } from "../world/grid.js";
+import { getMoveRange } from "../character/character.js";
+import { isMoving } from "../player/movement.js";
 import { getClickMode } from "../core/clickMode.js";
-import { getEnemies, removeEnemy, resetEnemy, setEnemyMeshPosition, placeEnemy } from "../enemies/enemies.js";
+import { getEnemies, resetEnemy } from "../enemies/enemies.js";
 import { showMessage } from "../ui/messages.js";
-import { tickCooldowns, startCooldown, getCooldown, hasTechnique, getTechnique } from "./techniques.js";
-import { startRhythm, stopRhythm } from "./rhythm.js";
+import { tickCooldowns } from "./techniques.js";
+import { state, isPlayerTurn, emitTurnUpdated, updateWaits } from "./combatState.js";
+import { getDistance } from "./combatRules.js";
+import { playerMove, openActionMenu } from "./playerActions.js";
+import { runEnemyTurn, setupEnemyTurns } from "./enemyTurn.js";
+import { endCombat } from "./combatEnd.js";
+
+export { isInCombat, isPlayerTurn, getCombatState, getReachableTiles } from "./combatState.js";
+export { useTechnique, canEatInCombat, playerJump } from "./playerActions.js";
 
 const FLEE_DISTANCE = CHARACTER_DATA.combat.fleeDistance;
-// Wer höher steht als sein Ziel, macht so viel mehr Schaden (0.25 = +25 %)
-const HEIGHT_BONUS = CHARACTER_DATA.combat.heightBonus;
-// Pausen im Gegner-Zug (Sekunden), damit man sieht, was passiert
-const ENEMY_THINK_TIME = 0.4;
-const ENEMY_AFTER_ACTION_TIME = 0.4;
-// Pause nach dem eigenen Angriff (sonst verschwindet ein besiegter Gegner ohne sichtbaren Treffer)
-const AFTER_ATTACK_TIME = 0.4;
-// Gegner laufen genauso schnell wie der Spieler
-const ENEMY_TILES_PER_SECOND = 3;
-// Nach einer Flucht so lange keine Aggro, damit der Gegner nicht sofort wieder angreift
-const AGGRO_COOLDOWN_AFTER_FLEE = 5;
 // Gegner, die so nah beim auslösenden Gegner stehen, kämpfen mit (Gruppen)
 const GROUP_RADIUS = 2;
 
-let player = null;
-// null = kein Kampf. Sonst: { enemies, order, turnIndex, round, current, moveLeft, actionUsed, busy, starting }
-let combat = null;
-// Wartende Pausen (laufen über den Spiel-Loop, nicht über setTimeout)
-const waits = [];
-// Laufender Gegner-Schritt: { enemy, from, to, progress, resolve }
-let enemyStep = null;
-let aggroCooldown = 0;
-// Schaden nach Block-Ergebnis (bei 1 Schaden blockt "gut" also auch alles, erst bei größeren Zahlen gibt es einen Unterschied)
-const BLOCK_DAMAGE = {
-  perfect: () => 0,
-  good: (damage) => Math.floor(damage / 2),
-  miss: (damage) => damage,
-};
-
-// Gibt zurück, ob gerade gekämpft wird.
-export function isInCombat() {
-  return combat !== null;
-}
-
-// Gibt zurück, ob der Spieler gerade dran ist und nichts mehr läuft (dann darf er handeln).
-export function isPlayerTurn() {
-  return combat !== null && !combat.starting && combat.current === player && !combat.busy;
-}
-
-// Felder, die der Spieler in diesem Zug noch erreichen kann (leer, wenn er nicht dran ist).
-export function getReachableTiles() {
-  if (!isPlayerTurn() || combat.moveLeft === 0) {
-    return [];
-  }
-  const reachable = [];
-  const size = getGridSize();
-  for (let z = 0; z < size.depth; z++) {
-    for (let x = 0; x < size.width; x++) {
-      if (getDistance(player, { x, z }) > combat.moveLeft) {
-        continue;
-      }
-      const path = findPath({ x: player.x, z: player.z }, { x, z });
-      if (path !== null && path.length > 0 && path.length <= combat.moveLeft) {
-        reachable.push({ x, z });
-      }
-    }
-  }
-  return reachable;
-}
-
-// Gibt den Zustand für die Anzeige zurück: Reihenfolge, wer dran ist, Runde, übrige Felder, Aktion verbraucht.
-export function getCombatState() {
-  if (combat === null) {
-    return null;
-  }
-  return {
-    order: combat.order,
-    current: combat.current,
-    round: combat.round,
-    moveLeft: combat.moveLeft,
-    actionUsed: combat.actionUsed,
-  };
-}
-
-// Benutzt eine Technik auf einen Gegner (aus dem Aktions-Menü): daneben → sofort,
-// sonst erst hinlaufen, wenn die Felder in diesem Zug reichen.
-export function useTechnique(techniqueId, enemy) {
-  if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
-    return;
-  }
-  if (combat.actionUsed) {
-    showMessage("You already acted this turn");
-    return;
-  }
-  if (!hasTechnique(player, techniqueId) || getCooldown(player, techniqueId) > 0) {
-    return;
-  }
-  if (isAdjacent(player, enemy)) {
-    playerCombo(enemy, techniqueId);
-    return;
-  }
-
-  const path = findPathToObject({ x: player.x, z: player.z }, { x: enemy.x, z: enemy.z });
-  if (path === null || path.length > combat.moveLeft) {
-    showMessage("Too far away");
-    return;
-  }
-  walkPlayer(path, () => {
-    if (combat !== null && enemy.alive) {
-      playerCombo(enemy, techniqueId);
-    }
-  });
-}
-
-// Prüft, ob der Charakter gerade essen darf (null = ja, sonst der Grund als Meldung). Für setupFood.
-export function canEatInCombat(character) {
-  if (combat === null) {
-    return null;
-  }
-  if (character !== player || !isPlayerTurn()) {
-    return "Wait for your turn";
-  }
-  if (combat.actionUsed) {
-    return "You already acted this turn";
-  }
-  return null;
-}
-
 // Meldet den Kampf für den Spieler an (nach createEnemies aufrufen).
 export function setupCombat(character) {
-  player = character;
+  state.player = character;
 
   // Start: Rechtsklick auf einen Gegner → hingelaufen → Kampf
   on("objectReached", (data) => {
-    if (data.character === player && data.object === "enemy" && data.enemy.alive && combat === null) {
+    if (data.character === character && data.object === "enemy" && data.enemy.alive && state.combat === null) {
       startCombat(data.enemy);
     }
   });
@@ -150,7 +42,7 @@ export function setupCombat(character) {
   on("attackIntent", ({ enemy }) => openActionMenu(enemy));
   on("tileClicked", (tile) => {
     // Im Sprung-Modus gehört der Klick dem Sprung (Windriding)
-    if (combat !== null && getClickMode() === null) {
+    if (state.combat !== null && getClickMode() === null) {
       playerMove(tile);
     }
   });
@@ -160,18 +52,20 @@ export function setupCombat(character) {
     }
   });
   on("itemEaten", (data) => {
-    if (combat !== null && data.character === player) {
-      combat.actionUsed = true;
+    if (state.combat !== null && data.character === character) {
+      state.combat.actionUsed = true;
       emitTurnUpdated();
     }
   });
 
+  setupEnemyTurns();
   addUpdate(updateCombat);
 }
 
 // Startet einen Kampf mit diesem Gegner und allen anderen, in deren Aggro-Reichweite der Spieler steht.
 // Gruppen: Wer so nah beim auslösenden Gegner steht, kämpft auch mit.
 function startCombat(triggerEnemy) {
+  const { player } = state;
   const enemies = getEnemies().filter(
     (enemy) =>
       enemy.alive &&
@@ -179,7 +73,7 @@ function startCombat(triggerEnemy) {
         getDistance(player, enemy) <= enemy.aggroRange ||
         getDistance(triggerEnemy, enemy) <= GROUP_RADIUS),
   );
-  combat = {
+  state.combat = {
     enemies: enemies,
     order: [],
     turnIndex: -1,
@@ -196,19 +90,13 @@ function startCombat(triggerEnemy) {
   showMessage(`${triggerEnemy.name} attacks!`);
 }
 
-// Läuft jedes Bild: Pausen, Gegner-Schritte, Kampfbeginn, außerhalb vom Kampf Aggro und Wiederkommen.
+// Läuft jedes Bild: Pausen, Kampfbeginn, außerhalb vom Kampf Aggro und Wiederkommen.
 function updateCombat(deltaTime) {
-  for (let i = waits.length - 1; i >= 0; i--) {
-    waits[i].timeLeft -= deltaTime;
-    if (waits[i].timeLeft <= 0) {
-      const { resolve } = waits.splice(i, 1)[0];
-      resolve();
-    }
-  }
-  updateEnemyStep(deltaTime);
+  updateWaits(deltaTime);
 
+  const { combat, player } = state;
   if (combat === null) {
-    aggroCooldown = Math.max(0, aggroCooldown - deltaTime);
+    state.aggroCooldown = Math.max(0, state.aggroCooldown - deltaTime);
     checkAggro();
     updateRespawns(deltaTime);
     return;
@@ -222,8 +110,9 @@ function updateCombat(deltaTime) {
 
 // Kommt der Spieler einem Gegner zu nah, greift der an.
 function checkAggro() {
+  const { player } = state;
   // Nach einer Niederlage wird gleich neu geladen, bis dahin kein neuer Kampf
-  if (player.hp <= 0 || aggroCooldown > 0) {
+  if (player.hp <= 0 || state.aggroCooldown > 0) {
     return;
   }
   for (const enemy of getEnemies()) {
@@ -236,6 +125,7 @@ function checkAggro() {
 
 // Besiegte Gegner kommen nach respawnSeconds wieder (nur außerhalb vom Kampf, im Kampf ist die Welt eingefroren).
 function updateRespawns(deltaTime) {
+  const { player } = state;
   for (const enemy of getEnemies()) {
     if (enemy.alive) {
       continue;
@@ -251,6 +141,7 @@ function updateRespawns(deltaTime) {
 
 // Neue Runde: Reihenfolge nach AGI, bei Gleichstand Münzwurf.
 function startRound() {
+  const { combat, player } = state;
   combat.round += 1;
   const fighters = [player, ...combat.enemies.filter((enemy) => enemy.alive)];
   // Erst zufällig mischen, dann stabil nach AGI sortieren: Gleichstände bleiben zufällig (Münzwurf)
@@ -263,6 +154,7 @@ function startRound() {
 
 // Gibt den Zug an den Nächsten in der Reihenfolge (besiegte werden übersprungen).
 function nextTurn() {
+  const { combat, player } = state;
   if (combat === null) {
     return;
   }
@@ -286,183 +178,13 @@ function nextTurn() {
 
   if (fighter !== player) {
     // Fehler im Gegner-Zug sonst unsichtbar (async)
-    runEnemyTurn(fighter).catch((error) => console.error("Fehler im Gegner-Zug:", error));
-  }
-}
-
-// Spieler klickt im Kampf auf ein Feld: hinlaufen, wenn es in Reichweite ist.
-function playerMove(tile) {
-  if (!isPlayerTurn()) {
-    return;
-  }
-  const path = findPath({ x: player.x, z: player.z }, tile);
-  if (path === null || path.length === 0) {
-    return;
-  }
-  if (path.length > combat.moveLeft) {
-    showMessage("Too far for this turn");
-    return;
-  }
-  walkPlayer(path, () => {});
-}
-
-// Klick auf einen Gegner im eigenen Zug: Aktions-Menü öffnen ("actionMenuOpened", die Anzeige baut es).
-function openActionMenu(enemy) {
-  if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
-    return;
-  }
-  if (combat.actionUsed) {
-    showMessage("You already acted this turn");
-    return;
-  }
-  emit("actionMenuOpened", { enemy });
-}
-
-// Sprung im Kampf (Windriding): kostet moveCost Felder, Aktion bleibt frei. Gibt true zurück, wenn er startet.
-export function playerJump(tile, moveCost, ability, onLanded) {
-  if (!isPlayerTurn() || combat.moveLeft < moveCost) {
-    return false;
-  }
-  combat.moveLeft -= moveCost;
-  combat.busy = true;
-  setOccupied(player.x, player.z, false);
-  emitTurnUpdated();
-  const started = jumpTo(tile, ability, () => {
-    if (combat !== null) {
-      setOccupied(player.x, player.z, true);
-      combat.busy = false;
-      emitTurnUpdated();
-    }
-    onLanded();
-  });
-  if (!started) {
-    combat.moveLeft += moveCost;
-    combat.busy = false;
-    setOccupied(player.x, player.z, true);
-    emitTurnUpdated();
-  }
-  return started;
-}
-
-// Lässt den Spieler einen Weg im Kampf laufen und zieht die Felder ab.
-function walkPlayer(path, onDone) {
-  combat.moveLeft -= path.length;
-  combat.busy = true;
-  setOccupied(player.x, player.z, false);
-  emitTurnUpdated();
-  walkPath(path, () => {
-    if (combat === null) {
-      return;
-    }
-    setOccupied(player.x, player.z, true);
-    combat.busy = false;
-    emitTurnUpdated();
-    onDone();
-  });
-}
-
-// Angriff des Spielers: Ausweichen würfeln, erster Schlag trifft sicher. Hat die Technik ein Muster (Cleave),
-// folgt eine Rhythmus-Combo, jeder getroffene Takt hängt einen Zusatzschlag an. Der normale Angriff hat keins.
-async function playerCombo(enemy, techniqueId) {
-  const technique = getTechnique(techniqueId);
-  const pattern = technique.pattern;
-  combat.actionUsed = true;
-  combat.busy = true;
-  startCooldown(player, technique.id);
-  faceTowards(player, enemy);
-  emitTurnUpdated();
-
-  const hits = [];
-  const hit = (factor, index) => {
-    const damage = getScaledDamage(player, enemy, factor);
-    takeDamage(enemy, damage);
-    hits.push(damage);
-    emit("attackResolved", { attacker: player, target: enemy, damage, dodged: false, technique: technique.id, hit: index, highGround: isHigher(player, enemy) });
-  };
-
-  // Ausweichen gilt für die ganze Combo
-  const dodged = Math.random() < getDodgeChance(enemy);
-  let results = [];
-  if (dodged) {
-    emit("attackResolved", { attacker: player, target: enemy, damage: 0, dodged: true, technique: technique.id, hit: 0 });
-  } else {
-    hit(technique.firstHit ?? 1, 0);
-    // Die Combo läuft immer zu Ende, auch wenn schon der erste Schlag reicht (Zusatzschläge = Overkill).
-    // Der Gegner verschwindet erst danach.
-    if (pattern.length > 0) {
-      results = await startRhythm({
-        pattern: pattern,
-        target: enemy.mesh,
-        stopAtMiss: true,
-        onBeat: (index, result) => {
-          if (result !== "miss") {
-            hit(pattern[index].damage, index + 1);
-          }
-        },
-      });
-    }
-  }
-  // Kurz warten, damit man den Treffer sieht, bevor der Gegner verschwindet
-  await wait(AFTER_ATTACK_TIME);
-
-  emit("comboEnded", { attacker: player, target: enemy, technique: technique.id, results, hits, dodged, highGround: isHigher(player, enemy) });
-  if (combat === null) {
-    return;
-  }
-  combat.busy = false;
-  if (enemy.hp === 0) {
-    defeatEnemy(enemy);
-  }
-  emitTurnUpdated();
-}
-
-// Gegner ist besiegt: verschwindet, und wenn keiner mehr steht, ist der Kampf gewonnen.
-function defeatEnemy(enemy) {
-  removeEnemy(enemy);
-  emit("enemyDefeated", { enemy });
-  if (combat.enemies.every((other) => !other.alive)) {
-    endCombat("victory", enemy);
-  }
-}
-
-// Angriff eines Gegners mit Block-Timing: Ein zufälliges Muster aus attackPatterns, jeder Takt ist ein Schlag.
-// Perfekt geblockt = 0 Schaden, gut = halber Schaden (abgerundet), daneben = voller Schaden.
-async function enemyAttack(enemy) {
-  combat.actionUsed = true;
-  faceTowards(enemy, player);
-
-  // Ausgewichen (AGI) = gar kein Schlag, kein Blocken nötig
-  if (Math.random() < getDodgeChance(player)) {
-    emit("attackResolved", { attacker: enemy, target: player, damage: 0, dodged: true });
-    return;
-  }
-
-  const patterns = enemy.attackPatterns;
-  const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-  await startRhythm({
-    pattern: pattern,
-    target: player.mesh,
-    stopAtMiss: false,
-    onBeat: (index, result) => {
-      const fullDamage = getScaledDamage(enemy, player, pattern[index].damage);
-      const damage = BLOCK_DAMAGE[result](fullDamage);
-      if (damage > 0) {
-        takeDamage(player, damage);
-      }
-      emit("attackResolved", { attacker: enemy, target: player, damage, dodged: false, block: result, highGround: isHigher(enemy, player) });
-      if (player.hp === 0) {
-        stopRhythm();
-      }
-    },
-  });
-
-  if (combat !== null && player.hp === 0) {
-    endCombat("defeat");
+    runEnemyTurn(fighter, nextTurn).catch((error) => console.error("Fehler im Gegner-Zug:", error));
   }
 }
 
 // "End Turn": Ist der Spieler weit genug von allen Gegnern weg, ist er geflohen. Sonst ist der Nächste dran.
 function endPlayerTurn() {
+  const { combat, player } = state;
   const farAway = combat.enemies.every((enemy) => !enemy.alive || getDistance(player, enemy) >= FLEE_DISTANCE);
   if (farAway) {
     endCombat("fled");
@@ -471,162 +193,7 @@ function endPlayerTurn() {
   nextTurn();
 }
 
-// Gegner-KI: Ist der Spieler in Reichweite, greift er an. Sonst läuft er hin, bis er in Reichweite ist.
-// Fernkämpfer (attackRange > 1) weichen erst ein Feld zurück, wenn der Spieler direkt neben ihnen steht.
-async function runEnemyTurn(enemy) {
-  combat.busy = true;
-  await wait(ENEMY_THINK_TIME);
-  if (combat === null) {
-    return;
-  }
-
-  if (enemy.attackRange > 1 && getDistance(enemy, player) === 1) {
-    const away = findRetreatStep(enemy);
-    if (away !== null) {
-      combat.moveLeft -= 1;
-      await walkEnemyStep(enemy, away);
-    }
-  } else if (!isInAttackRange(enemy)) {
-    const path = findPathToObject({ x: enemy.x, z: enemy.z }, { x: player.x, z: player.z });
-    if (path !== null && path.length > 0) {
-      const steps = path.slice(0, combat.moveLeft);
-      for (const step of steps) {
-        if (combat === null || isInAttackRange(enemy)) {
-          break;
-        }
-        combat.moveLeft -= 1;
-        await walkEnemyStep(enemy, step);
-      }
-    }
-  }
-
-  if (combat !== null && isInAttackRange(enemy)) {
-    await enemyAttack(enemy);
-    await wait(ENEMY_AFTER_ACTION_TIME);
-  }
-  if (combat !== null && combat.current === enemy) {
-    nextTurn();
-  }
-}
-
-// Lässt den Gegner ein Feld weiterlaufen (mit Animation) und wartet, bis er da ist.
-function walkEnemyStep(enemy, to) {
-  return new Promise((resolve) => {
-    faceTowards(enemy, to);
-    enemyStep = { enemy, from: { x: enemy.x, z: enemy.z }, to, progress: 0, resolve };
-    // Das Zielfeld gleich besetzen, damit niemand anderes es nimmt
-    placeEnemy(enemy, to.x, to.z);
-    setEnemyMeshPosition(enemy, gridToWorld(enemyStep.from.x, enemyStep.from.z));
-  });
-}
-
-// Bewegt das Gegner-Mesh weich zum nächsten Feld.
-function updateEnemyStep(deltaTime) {
-  if (enemyStep === null) {
-    return;
-  }
-  enemyStep.progress = Math.min(1, enemyStep.progress + ENEMY_TILES_PER_SECOND * deltaTime);
-  const from = gridToWorld(enemyStep.from.x, enemyStep.from.z);
-  const to = gridToWorld(enemyStep.to.x, enemyStep.to.z);
-  setEnemyMeshPosition(enemyStep.enemy, from.lerp(to, enemyStep.progress));
-  if (enemyStep.progress === 1) {
-    const { resolve } = enemyStep;
-    enemyStep = null;
-    resolve();
-  }
-}
-
-// Beendet den Kampf: "victory", "defeat" oder "fled". Danach läuft die Welt weiter.
-function endCombat(result, lastEnemy = null) {
-  const enemies = combat.enemies;
-  combat = null;
-  stopRhythm();
-  waits.length = 0;
-  setOccupied(player.x, player.z, false);
-
-  if (result === "fled") {
-    // Überlebende Gegner gehen zurück auf ihr Startfeld und sind wieder heil
-    for (const enemy of enemies) {
-      if (enemy.alive) {
-        resetEnemy(enemy);
-      }
-    }
-    aggroCooldown = AGGRO_COOLDOWN_AFTER_FLEE;
-    showMessage("You escaped");
-  } else if (result === "victory") {
-    showMessage(`You defeated ${lastEnemy.name}`);
-  } else {
-    showMessage("You were defeated");
-  }
-  emit("combatEnded", { result, player, enemies });
-}
-
-// Wartet so viele Sekunden Spielzeit.
-function wait(seconds) {
-  return new Promise((resolve) => waits.push({ timeLeft: seconds, resolve }));
-}
-
-// Meldet "combatTurnUpdated", damit die Anzeige (Felder, Knöpfe) neu zeichnet.
-function emitTurnUpdated() {
-  // Nach dem Kampfende (z. B. Sieg mitten im eigenen Angriff) gibt es keinen Zug mehr
-  if (combat === null) {
-    return;
-  }
-  emit("combatTurnUpdated", getCombatState());
-}
-
-// Dreht Spieler oder Gegner zum Ziel.
-function faceTowards(fighter, target) {
-  if (fighter === player) {
-    turnTowards(target);
-  } else {
-    fighter.mesh.rotation.y = Math.atan2(target.x - fighter.x, target.z - fighter.z);
-  }
-}
-
-// Ein Schlag mit diesem Anteil vom normalen Schaden (z. B. 0.5 für einen Zusatzschlag), mindestens 1.
-// Von oben (Angreifer steht höher als das Ziel) gibt es den Höhen-Bonus.
-function getScaledDamage(attacker, target, factor) {
-  const heightFactor = isHigher(attacker, target) ? 1 + HEIGHT_BONUS : 1;
-  return Math.max(1, Math.round(getDamage(attacker) * factor * heightFactor));
-}
-
-// Steht a auf einem höheren Feld als b?
-function isHigher(a, b) {
-  return getTile(a.x, a.z).height > getTile(b.x, b.z).height;
-}
-
-// Nahkampf: direkt daneben. Fernkampf: höchstens attackRange Felder entfernt.
-function isInAttackRange(enemy) {
-  return enemy.attackRange > 1 ? getDistance(enemy, player) <= enemy.attackRange : isAdjacent(enemy, player);
-}
-
-// Ein Nachbarfeld, das weiter vom Spieler weg ist (zum Zurückweichen), oder null, wenn keins frei ist.
-function findRetreatStep(enemy) {
-  let best = null;
-  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-    const step = { x: enemy.x + dx, z: enemy.z + dz };
-    const path = findPath({ x: enemy.x, z: enemy.z }, step);
-    if (path !== null && path.length === 1 && getDistance(step, player) > getDistance(enemy, player)) {
-      best = step;
-    }
-  }
-  return best;
-}
-
-// Felder-Abstand (nur gerade Schritte).
-function getDistance(a, b) {
-  return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
-}
-
-// Direkt nebeneinander und höchstens eine Stufe Höhenunterschied (wie beim Laufen).
-function isAdjacent(a, b) {
-  const heightA = getTile(a.x, a.z).height;
-  const heightB = getTile(b.x, b.z).height;
-  return getDistance(a, b) === 1 && Math.abs(heightA - heightB) <= MAX_STEP_UP;
-}
-
 // Spieler lebt, solange er HP hat; Gegner, solange sie nicht besiegt sind.
 function isAlive(fighter) {
-  return fighter === player ? fighter.hp > 0 : fighter.alive;
+  return fighter === state.player ? fighter.hp > 0 : fighter.alive;
 }

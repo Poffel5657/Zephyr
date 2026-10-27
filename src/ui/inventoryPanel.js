@@ -1,5 +1,6 @@
 // Zeigt das Inventar eines Charakters als HTML-Fenster über dem Spiel (öffnen/schließen mit I oder Knopf).
 import "./ui.css";
+import "./inventoryPanel.css";
 import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { SLOT_COUNT, getSlots, clearSlot, moveSlot } from "../inventory/inventory.js";
@@ -86,7 +87,7 @@ export function createInventoryPanel(inventory) {
     });
     slot.addEventListener("pointerleave", () => showName(selectedIndex));
 
-    // Antippen wählt aus, nochmal antippen (oder leerer Slot) hebt die Auswahl auf
+    // Klick wählt aus, nochmal klicken (oder leerer Slot) hebt die Auswahl auf
     slot.addEventListener("click", () => {
       const isEmpty = getSlots(inventory)[i] === null;
       selectedIndex = isEmpty || selectedIndex === i ? null : i;
@@ -153,7 +154,7 @@ export function createInventoryPanel(inventory) {
   });
 
   const button = document.createElement("button");
-  button.className = "inventory-button";
+  button.className = "ui-button inventory-button";
   button.textContent = "Inventory";
   document.body.appendChild(button);
 

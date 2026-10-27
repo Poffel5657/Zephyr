@@ -1,5 +1,6 @@
 // Zeigt das Hauptmenü als HTML-Fenster über dem Spiel (öffnen/schließen mit Escape oder Knopf).
 import "./ui.css";
+import "./menu.css";
 import { saveManual, loadManualSave, getManualSaveTime, deleteSave, exportSaveText, importSaveText } from "../save/save.js";
 import { showMessage } from "./messages.js";
 import { isInCombat } from "../combat/combat.js";
@@ -181,7 +182,7 @@ export function createMenu(player) {
 
   // Fester Menü-Knopf oben rechts
   const button = document.createElement("button");
-  button.className = "menu-button";
+  button.className = "ui-button menu-button";
   button.textContent = "Menu";
   document.body.appendChild(button);
 

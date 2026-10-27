@@ -1,11 +1,12 @@
 // Aktions-Menü im Kampf: Klick auf einen Gegner öffnet direkt daneben die Liste der Techniken.
 // Auswahl per Klick oder Taste 1–9, der Charakter läuft dann selbst hin (wenn die Felder reichen).
 import "./ui.css";
-import * as THREE from "three";
+import "./actionMenu.css";
 import { on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
 import { useTechnique } from "../combat/combat.js";
 import { getTechniques, getCooldown } from "../combat/techniques.js";
+import { placeOnScreen } from "./screenPosition.js";
 
 const HIDDEN_CLASS = "action-menu-hidden";
 // So weit unter dem Gegner-Mittelpunkt sitzt das Menü
@@ -17,7 +18,6 @@ export function createActionMenu(player, camera) {
   menu.className = "action-menu " + HIDDEN_CLASS;
   document.body.appendChild(menu);
 
-  const screenPosition = new THREE.Vector3();
   let target = null;
   let techniques = [];
 
@@ -60,11 +60,7 @@ export function createActionMenu(player, camera) {
     if (target === null) {
       return;
     }
-    screenPosition.copy(target.mesh.position);
-    screenPosition.y -= MENU_DROP;
-    screenPosition.project(camera);
-    menu.style.left = ((screenPosition.x + 1) / 2) * innerWidth + "px";
-    menu.style.top = ((1 - screenPosition.y) / 2) * innerHeight + "px";
+    placeOnScreen(menu, target.mesh.position, camera, -MENU_DROP);
   };
 
   on("actionMenuOpened", ({ enemy }) => open(enemy));

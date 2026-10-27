@@ -1,5 +1,6 @@
 // Zeigt die Kampf-Oberfläche: Zugreihenfolge, Runden-Aktionen, Kampf-Log und Gegner-Info.
 import "./ui.css";
+import "./combatHud.css";
 import ITEMS from "../data/items.json";
 import TECHNIQUES from "../data/techniques.json";
 import { on, emit } from "../core/eventBus.js";
@@ -27,7 +28,7 @@ export function createCombatHud() {
   turnPanel.className = "combat-turn-panel " + HIDDEN_CLASS;
 
   const endTurnButton = document.createElement("button");
-  endTurnButton.className = "combat-end-turn-button";
+  endTurnButton.className = "ui-button combat-end-turn-button";
   endTurnButton.textContent = "End Turn";
   turnPanel.appendChild(endTurnButton);
 

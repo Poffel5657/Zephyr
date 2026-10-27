@@ -1,0 +1,124 @@
+/* Inventar-Fenster: Slot-Raster, Info-Zeile, Knöpfe. */
+.inventory-panel {
+  position: absolute;
+  right: var(--ui-edge);
+  bottom: 60px;
+  padding: 10px;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  z-index: 10;
+}
+
+.inventory-hidden {
+  display: none;
+}
+
+.inventory-title {
+  margin-bottom: 8px;
+  color: var(--ui-text);
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.inventory-gold {
+  margin-bottom: 6px;
+  color: #ffd84a;
+  font-family: sans-serif;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* 5 Spalten: die 30 Slots brechen von selbst in 6 Reihen um */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--slot-size));
+  gap: var(--slot-gap);
+}
+
+.inventory-slot {
+  position: relative;
+  width: var(--slot-size);
+  height: var(--slot-size);
+  box-sizing: border-box;
+  background-color: var(--slot-bg);
+  border: var(--ui-border);
+  border-radius: 4px;
+}
+
+.inventory-selected {
+  border-color: var(--ui-text);
+  box-shadow: 0 0 0 1px var(--ui-text);
+}
+
+/* Platz, von dem gerade ein Item weggezogen wird */
+.inventory-drag-origin {
+  border: 2px dashed #f0c040;
+  opacity: 0.5;
+}
+
+.inventory-amount {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  color: var(--ui-text);
+  font-family: sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+
+.inventory-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  margin-top: 8px;
+}
+
+.inventory-info-name {
+  overflow: hidden;
+  color: var(--ui-text);
+  font-family: sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.inventory-drop {
+  padding: 4px 8px;
+  background-color: var(--slot-bg);
+  color: var(--ui-text);
+  border: var(--ui-border);
+  border-radius: 4px;
+  font-family: sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.inventory-drop-target {
+  background-color: #a03030;
+  border-color: #e05050;
+}
+
+.inventory-drop:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.inventory-button {
+  position: absolute;
+  right: var(--ui-edge);
+  bottom: 16px;
+}
+
+/* Essen-Knopf im Inventar neben "Drop" */
+.inventory-eat {
+  margin-left: auto;
+}

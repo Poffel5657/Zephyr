@@ -1,16 +1,18 @@
 // Zeigt kleine Lebensbalken über den Charakteren während des Kampfes an.
 import "./ui.css";
-import * as THREE from "three";
+import "./hpBars.css";
+import { placeOnScreen } from "./screenPosition.js";
 import { addUpdate } from "../core/loop.js";
 import { on } from "../core/eventBus.js";
 import { getMaxHp } from "../character/character.js";
 
 const HIDDEN_CLASS = "hpbar-hidden";
+// So weit über dem Mesh-Mittelpunkt sitzt die Leiste
+const BAR_LIFT = 0.9;
 
 // Erzeugt Lebensbalken für Spieler und Gegner und positioniert sie jeden Frame über dem 3D-Mesh.
 export function createHpBars(player, enemies, camera) {
   let inCombat = false;
-  const vector = new THREE.Vector3();
   const barEntries = [];
 
   // Legt ein HTML-Balkenelement für einen Kämpfer an
@@ -98,26 +100,9 @@ export function createHpBars(player, enemies, camera) {
         continue;
       }
 
-      vector.set(
-        character.mesh.position.x,
-        character.mesh.position.y + 0.9,
-        character.mesh.position.z
-      );
-      vector.project(camera);
-
-      // Hinter der Kamera ausblenden
-      if (vector.z > 1) {
-        bar.classList.add(HIDDEN_CLASS);
-        continue;
-      }
-
-      const screenX = ((vector.x + 1) / 2) * window.innerWidth;
-      const screenY = ((1 - vector.y) / 2) * window.innerHeight;
-
-      bar.style.transform = "translate(-50%, -100%)";
-      bar.style.left = `${screenX}px`;
-      bar.style.top = `${screenY}px`;
-      bar.classList.remove(HIDDEN_CLASS);
+      // Über dem Kopf, hinter der Kamera ausblenden
+      const visible = placeOnScreen(bar, character.mesh.position, camera, BAR_LIFT);
+      bar.classList.toggle(HIDDEN_CLASS, !visible);
     }
   });
 }

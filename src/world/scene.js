@@ -1,4 +1,5 @@
-// Baut die 3D-Welt zusammen: Renderer, Licht, Insel und Kamera.
+// Baut das Spiel zusammen: Renderer, Welt, Spieler-Systeme, Kampf, Fenster, Eingabe und Spielstand.
+// Die Reihenfolge der Abschnitte zählt an ein paar Stellen (siehe Kommentare).
 import * as THREE from "three";
 import islandData from "../data/maps/start-island.json";
 import { loadGrid } from "./grid.js";
@@ -38,46 +39,61 @@ import { setupSaveIcon } from "../ui/saveIcon.js";
 import { createMenu } from "../ui/menu.js";
 
 export const scene = new THREE.Scene();
-export const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// ---------- Welt ----------
 loadGrid(islandData);
 setupLighting(scene);
 const player = createPlayer(scene, 6, 6);
-setupPlayerMovement(player);
+// Alles Anklickbare (Felder, Objekte, Gegner, Beutel) landet in dieser Liste
+const clickables = buildIsland(scene);
+const enemies = createEnemies(scene, islandData.enemies, clickables);
+
+// ---------- Spieler und Systeme ----------
+// Debug zuerst, damit es alle Events von Anfang an mitschreibt
 if (import.meta.env.DEV) {
   setupDebugTools(player);
 }
+setupPlayerMovement(player);
 setupInventoryEvents(player.inventory);
 setupSkillEvents(player);
+// Meldungen vor Charakter und Techniken: Bei gleichzeitigen Level-Ups bleibt so die wichtigste Meldung stehen
+setupMessages();
+setupCharacterEvents(player);
+setupTechniqueEvents(player);
+setupFood(player, canEatInCombat);
+setupTimingBar();
+setupWoodcutting(player);
+setupWindriding(player);
+setupChests(player);
+setupLoot(player, scene, clickables);
+
+// ---------- Kampf ----------
+setupCombat(player);
+setupRhythm(camera);
+
+// ---------- Fenster und Anzeigen ----------
 createInventoryPanel(player.inventory);
 createSkillsPanel(player);
 createCharacterPanel(player);
-setupMessages();
-setupCharacterEvents(player);
-setupFood(player, canEatInCombat);
-setupTechniqueEvents(player);
-setupTimingBar();
-setupWoodcutting(player);
-const clickables = buildIsland(scene);
-const enemies = createEnemies(scene, islandData.enemies, clickables);
-setupCombat(player);
-createReachableTiles(scene);
+// Nach Laufen und Kampf: Das Riding-Menü setzt beim Sprung-Klick den Klick-Modus zurück, die anderen sollen ihn vorher noch sehen
+createRidingMenu(player, scene);
 createCombatHud();
 createHpBars(player, enemies, camera);
-setupRhythm(camera);
 createActionMenu(player, camera);
-setupLoot(player, scene, clickables);
-setupWindriding(player);
-createRidingMenu(player, scene);
-setupChests(player);
-setupCamera(renderer.domElement);
-setupInput(camera, renderer.domElement, clickables);
+createReachableTiles(scene);
 createTileMarker(scene);
 setupSaveIcon();
 createMenu(player);
+
+// ---------- Kamera und Eingabe ----------
+setupCamera(renderer.domElement);
+setupInput(camera, renderer.domElement, clickables);
+
+// ---------- Spielstand ----------
 // Laden erst, wenn Insel und Fenster stehen (Stümpfe und Fenster brauchen sie), danach automatisch speichern
 loadGame(player);
 // Nach dem Laden, damit die Kamera gleich an der gespeicherten Position steht

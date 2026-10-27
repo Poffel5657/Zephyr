@@ -1,5 +1,6 @@
 // Zeigt kurze Meldungen oben in der Bildschirmmitte (z. B. "Your inventory is full").
 import "./ui.css";
+import "./messages.css";
 import SKILL_DATA from "../data/skills.json";
 import { on } from "../core/eventBus.js";
 

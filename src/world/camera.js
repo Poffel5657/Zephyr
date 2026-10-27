@@ -45,7 +45,7 @@ export function setupCamera(canvas) {
 }
 
 // Richtet die Kamera schräg von oben auf die Mitte der geladenen Map aus.
-export function focusOnIsland() {
+function focusOnIsland() {
   const size = getGridSize();
   const centerX = (size.width - 1) / 2;
   const centerZ = (size.depth - 1) / 2;

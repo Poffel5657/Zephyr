@@ -22,9 +22,10 @@ export function createCharacterStats(characterId) {
   return character;
 }
 
-// Level-Faktor der Formel: Level × levelFactor, aber mindestens 1.
+// Level-Faktor der Formel: 1 auf Level 1, danach + levelFactor pro Level (0.5 → Lv 2: ×1,5, Lv 4: ×2,5, Lv 10: ×5,5).
+// Gilt für Spieler und Gegner gleich: gleiche Werte und gleiches Level = gleiche HP und gleicher Schaden.
 function getLevelMultiplier(character) {
-  return Math.max(1, character.level * CHARACTER_DATA.levelFactor);
+  return 1 + (character.level - 1) * CHARACTER_DATA.levelFactor;
 }
 
 // Max-Lebenspunkte = VIT × Level-Faktor (abgerundet).

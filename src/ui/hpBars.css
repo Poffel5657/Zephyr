@@ -1,0 +1,32 @@
+/* HP-Leisten über den Köpfen. */
+/* Lebensbalken über den 3D-Kämpfern */
+.hpbar {
+  position: fixed;
+  width: 40px;
+  height: 5px;
+  box-sizing: border-box;
+  background-color: var(--slot-bg);
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  border-radius: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  transform: translate(-50%, -100%);
+  z-index: 5;
+}
+
+.hpbar-fill {
+  height: 100%;
+  width: 100%;
+  background-color: #2ecc71;
+  transition: width 0.2s ease;
+}
+
+.hpbar-fill-low {
+  background-color: #e74c3c;
+}
+
+/* Muss am Ende stehen */
+.hpbar-hidden {
+  display: none;
+}

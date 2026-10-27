@@ -1,13 +1,11 @@
 // Macht aus Mausklicks und Mausbewegungen Feld-Events ("tileClicked", "tileHovered").
-// Gegner: Linksklick = "enemyClicked" (auswählen), Rechtsklick oder lange drücken (Handy) = "attackIntent".
+// Gegner: Linksklick = "enemyClicked" (auswählen), Rechtsklick = "attackIntent".
 import * as THREE from "three";
 import { emit } from "./eventBus.js";
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const MAX_CLICK_MOVE = 6;
-// So lange muss man am Handy auf einen Gegner drücken, um anzugreifen
-const LONG_PRESS_MS = 500;
 const LEFT_BUTTON = 0;
 const RIGHT_BUTTON = 2;
 
@@ -16,9 +14,6 @@ let canvas = null;
 let clickables = [];
 let pressPosition = null;
 let rightPressPosition = null;
-let longPressTimer = null;
-// true, wenn das lange Drücken schon angegriffen hat (dann kein Klick beim Loslassen)
-let longPressDone = false;
 let hoveredTile = null;
 
 // Richtet die Maus-Eingabe ein: Kamera, Zeichenfläche und die Liste der anklickbaren Objekte.
@@ -41,7 +36,7 @@ function onPointerLeave() {
   }
 }
 
-// Merkt sich, wo gedrückt wurde. Am Handy startet das lange Drücken.
+// Merkt sich, wo gedrückt wurde (links oder rechts).
 function onPointerDown(event) {
   if (event.button === RIGHT_BUTTON) {
     rightPressPosition = { x: event.clientX, y: event.clientY };
@@ -51,19 +46,6 @@ function onPointerDown(event) {
     return;
   }
   pressPosition = { x: event.clientX, y: event.clientY };
-  longPressDone = false;
-
-  if (event.pointerType === "touch") {
-    const press = { clientX: event.clientX, clientY: event.clientY };
-    clearTimeout(longPressTimer);
-    longPressTimer = setTimeout(() => {
-      const hit = findHitAt(press);
-      if (hit !== null && hit.enemy !== undefined) {
-        longPressDone = true;
-        emit("attackIntent", { enemy: hit.enemy });
-      }
-    }, LONG_PRESS_MS);
-  }
 }
 
 // Beim Loslassen ohne Bewegung (also kein Kamera-Drehen): Links = Feld oder Gegner anklicken, Rechts = angreifen.
@@ -81,10 +63,9 @@ function onPointerUp(event) {
     return;
   }
 
-  clearTimeout(longPressTimer);
   const moved = Math.hypot(event.clientX - pressPosition.x, event.clientY - pressPosition.y);
   pressPosition = null;
-  if (moved > MAX_CLICK_MOVE || longPressDone) {
+  if (moved > MAX_CLICK_MOVE) {
     return;
   }
 
@@ -101,11 +82,6 @@ function onPointerUp(event) {
 
 // Meldet "tileHovered", sobald die Maus über ein anderes Feld fährt (null = über keinem Feld).
 function onPointerMove(event) {
-  // Finger bewegt (Kamera drehen) → kein langes Drücken
-  if (pressPosition !== null && Math.hypot(event.clientX - pressPosition.x, event.clientY - pressPosition.y) > MAX_CLICK_MOVE) {
-    clearTimeout(longPressTimer);
-  }
-
   const hit = findHitAt(event);
   const tile = hit === null ? null : hit.tile;
   const sameTile =

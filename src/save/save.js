@@ -29,7 +29,7 @@ let savingPaused = false;
 const DEFEAT_RELOAD_MS = 2000;
 
 // Baut den Spielstand als einfaches Objekt.
-export function createSaveData(player) {
+function createSaveData(player) {
   return {
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
@@ -201,7 +201,7 @@ export function setupAutoSave(player) {
   // Position und Baum-Restzeiten ändern sich ohne Event
   setInterval(() => saveGame(player), INTERVAL_MS);
 
-  // Am Handy feuert beim Schließen oft nur "visibilitychange", am PC "pagehide"
+  // Beim Schließen feuert "pagehide", beim Tab-Wechsel "visibilitychange" (beides speichern)
   addEventListener("pagehide", () => saveGame(player));
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {

@@ -1,0 +1,50 @@
+/* Timing-Leiste beim Holzfällen. */
+/* Timing-Mini-Spiel (Woodcutting): Leiste unten in der Mitte */
+.timing-bar {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  max-width: 80vw;
+  height: 22px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  z-index: 50;
+}
+
+.timing-hidden {
+  display: none;
+}
+
+.timing-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-color: #2ecc71;
+}
+
+.timing-pointer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--ui-text);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+  transform: translateX(-50%);
+}
+
+.timing-hit {
+  border-color: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.8);
+}
+
+.timing-miss {
+  border-color: #e74c3c;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.8);
+}

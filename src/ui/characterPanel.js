@@ -1,5 +1,6 @@
 // Zeigt die Attribute und Level-Werte eines Charakters als HTML-Fenster (öffnen/schließen mit C oder Knopf).
 import "./ui.css";
+import "./characterPanel.css";
 import { on } from "../core/eventBus.js";
 import { getLevelProgress, getMaxHp, getMaxZep, spendPoints, resetStatPoints, getSpentPointsTotal } from "../character/character.js";
 import { hasItem, removeItem } from "../inventory/inventory.js";
@@ -159,7 +160,7 @@ export function createCharacterPanel(character) {
   document.body.appendChild(panel);
 
   const button = document.createElement("button");
-  button.className = "character-button";
+  button.className = "ui-button character-button";
   button.textContent = "Character";
   document.body.appendChild(button);
 

@@ -1,5 +1,6 @@
 // Kleines Symbol unten in der Mitte, das bei jedem Speichern kurz aufblinkt.
 import "./ui.css";
+import "./saveIcon.css";
 import { on } from "../core/eventBus.js";
 
 const SHOW_TIME_MS = 800;

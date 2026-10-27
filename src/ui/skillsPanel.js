@@ -1,5 +1,6 @@
 // Zeigt die Skills eines Charakters als HTML-Fenster über dem Spiel (öffnen/schließen mit K oder Knopf).
 import "./ui.css";
+import "./skillsPanel.css";
 import SKILL_DATA from "../data/skills.json";
 import { on } from "../core/eventBus.js";
 import { getLevel, getXpForLevel } from "../skills/skills.js";
@@ -58,7 +59,7 @@ export function createSkillsPanel(character) {
   document.body.appendChild(panel);
 
   const button = document.createElement("button");
-  button.className = "skills-button";
+  button.className = "ui-button skills-button";
   button.textContent = "Skills";
   document.body.appendChild(button);
 

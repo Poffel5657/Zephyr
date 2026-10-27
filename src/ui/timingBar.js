@@ -1,6 +1,7 @@
-// Timing-Mini-Spiel: Ein Zeiger pendelt über eine Leiste, Leertaste oder Antippen im grünen Bereich = Treffer.
+// Timing-Mini-Spiel: Ein Zeiger pendelt über eine Leiste, Leertaste oder Klick auf die Leiste im grünen Bereich = Treffer.
 // Meldet pro Runde genau einmal "timingResult" mit { hit }.
 import "./ui.css";
+import "./timingBar.css";
 import { emit } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
 
@@ -31,7 +32,7 @@ let zoneStart = 0;
 let zoneSize = 0;
 let feedbackTimer = null;
 
-// Hängt die Leiste in die Seite und meldet Spiel-Loop, Leertaste und Antippen an (einmal beim Start aufrufen).
+// Hängt die Leiste in die Seite und meldet Spiel-Loop, Leertaste und Klick an (einmal beim Start aufrufen).
 export function setupTimingBar() {
   document.body.appendChild(bar);
   addUpdate(updateTimingBar);

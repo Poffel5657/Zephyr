@@ -2,6 +2,7 @@
 // Klick auf eine Fähigkeit → Ziel-Modus: Sprung-Felder leuchten, Klick auf ein Feld springt dorthin.
 // Nur sichtbar, wenn der Charakter Windschuhe dabeihat.
 import "./ui.css";
+import "./ridingMenu.css";
 import * as THREE from "three";
 import { on } from "../core/eventBus.js";
 import { getClickMode, setClickMode } from "../core/clickMode.js";
@@ -17,7 +18,7 @@ const MARKER_LIFT = 0.008;
 // Baut Knopf, Menü und die Markierungen für die Sprung-Ziele.
 export function createRidingMenu(player, scene) {
   const button = document.createElement("button");
-  button.className = "riding-button " + HIDDEN_CLASS;
+  button.className = "ui-button riding-button " + HIDDEN_CLASS;
   document.body.appendChild(button);
 
   const menu = document.createElement("div");

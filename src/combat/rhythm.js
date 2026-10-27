@@ -2,10 +2,11 @@
 // Kennt den Kampf nicht, es spielt nur ein Muster ab und meldet "rhythmBeat" und "rhythmEnded".
 // Zeitfenster, Tasten und Farben stehen in rhythm.json, die Muster in techniques.json / enemies.json.
 import "../ui/ui.css";
-import * as THREE from "three";
+import "../ui/rhythm.css";
 import RHYTHM from "../data/rhythm.json";
 import { emit } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
+import { placeOnScreen } from "../ui/screenPosition.js";
 
 // Größe der Ringe in Pixeln: Start und innerer Kreis (= jetzt drücken)
 const RING_START_SIZE = 130;
@@ -18,12 +19,10 @@ const FEEDBACK_TEXT = { perfect: "Perfect!", good: "Good", miss: "Miss" };
 let camera = null;
 let layer = null;
 let targetCircle = null;
-let dpad = null;
-const screenPosition = new THREE.Vector3();
 // Die laufende Combo (null = keine): { beats, target, stopAtMiss, onBeat, startTime, nextIndex, results, resolve }
 let current = null;
 
-// Baut die Anzeige (Ringe, innerer Kreis, Steuerkreuz) und hört auf die Tasten. Einmal beim Start aufrufen.
+// Baut die Anzeige (Ringe, innerer Kreis) und hört auf die Tasten. Einmal beim Start aufrufen.
 export function setupRhythm(activeCamera) {
   camera = activeCamera;
 
@@ -33,23 +32,6 @@ export function setupRhythm(activeCamera) {
   targetCircle.className = "rhythm-target";
   layer.appendChild(targetCircle);
   document.body.appendChild(layer);
-
-  // Steuerkreuz fürs Handy: vier farbige Knöpfe, nur während einer Combo und nur bei Touch-Bildschirmen
-  dpad = document.createElement("div");
-  dpad.className = "rhythm-dpad rhythm-hidden";
-  for (const [key, data] of Object.entries(RHYTHM.keys)) {
-    const button = document.createElement("button");
-    button.className = "rhythm-dpad-button rhythm-dpad-" + key;
-    button.textContent = data.label;
-    button.style.backgroundColor = data.color;
-    // pointerdown statt click: reagiert sofort, wichtig fürs Timing
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      pressKey(key);
-    });
-    dpad.appendChild(button);
-  }
-  document.body.appendChild(dpad);
 
   addEventListener("keydown", (event) => {
     const key = findKey(event.code);
@@ -91,9 +73,6 @@ export function startRhythm({ pattern, target, stopAtMiss, onBeat = () => {} }) 
   });
 
   layer.classList.remove("rhythm-hidden");
-  if (isTouchScreen()) {
-    dpad.classList.remove("rhythm-hidden");
-  }
 
   return new Promise((resolve) => {
     current = { beats, target, stopAtMiss, onBeat, startTime: now(), nextIndex: 0, results: [], resolve };
@@ -205,7 +184,6 @@ function finish() {
     beat.ring.remove();
   }
   layer.classList.add("rhythm-hidden");
-  dpad.classList.add("rhythm-hidden");
   targetCircle.textContent = "";
   emit("rhythmEnded", { results });
   resolve(results);
@@ -224,15 +202,7 @@ function showFeedback(result) {
 
 // Setzt die Ringe auf die Bildschirm-Position des Ziels. false, wenn das Ziel hinter der Kamera ist.
 function placeOverTarget() {
-  screenPosition.copy(current.target.position);
-  screenPosition.y += TARGET_LIFT;
-  screenPosition.project(camera);
-  if (screenPosition.z > 1) {
-    return false;
-  }
-  layer.style.left = ((screenPosition.x + 1) / 2) * innerWidth + "px";
-  layer.style.top = ((1 - screenPosition.y) / 2) * innerHeight + "px";
-  return true;
+  return placeOnScreen(layer, current.target.position, camera, TARGET_LIFT);
 }
 
 // Sucht die Combo-Taste zu einem Tastatur-Code (z. B. "ArrowUp" oder "KeyW" → "up").
@@ -243,11 +213,6 @@ function findKey(code) {
     }
   }
   return null;
-}
-
-// Handy oder Tablet (grober Zeiger, z. B. Finger) → Steuerkreuz zeigen.
-function isTouchScreen() {
-  return matchMedia("(pointer: coarse)").matches;
 }
 
 // Aktuelle Zeit in Sekunden (genauer als der Spiel-Loop, wichtig fürs Timing).

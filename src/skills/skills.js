@@ -34,7 +34,7 @@ export function createSkills() {
 }
 
 // Gibt dem Charakter XP in einem Skill und meldet "skillsChanged" und bei neuem Level "skillLevelUp".
-export function addXp(character, skillId, amount) {
+function addXp(character, skillId, amount) {
   if (SKILL_DATA.skills[skillId] === undefined) {
     console.warn(`Unbekannter Skill: "${skillId}"`);
     return;
