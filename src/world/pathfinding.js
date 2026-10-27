@@ -59,6 +59,29 @@ export function findPath(start, goal) {
   return null;
 }
 
+// Sucht den kürzesten Weg zu einem Nachbarfeld des Objekts bei x / z (null, wenn keins erreichbar ist).
+export function findPathToObject(start, objectTile) {
+  const objectHeight = getTile(objectTile.x, objectTile.z).height;
+  let bestPath = null;
+
+  for (const direction of DIRECTIONS) {
+    const standX = objectTile.x + direction.x;
+    const standZ = objectTile.z + direction.z;
+    const standTile = getTile(standX, standZ);
+    // Nur von Feldern aus, die höchstens eine Stufe höher oder tiefer liegen (nicht von unter einer Klippe)
+    if (standTile === null || Math.abs(standTile.height - objectHeight) > MAX_STEP_UP) {
+      continue;
+    }
+
+    const path = findPath(start, { x: standX, z: standZ });
+    if (path !== null && (bestPath === null || path.length < bestPath.length)) {
+      bestPath = path;
+    }
+  }
+
+  return bestPath;
+}
+
 // Macht aus x / z einen Text-Schlüssel für Map und Set.
 function tileKey(x, z) {
   return `${x},${z}`;

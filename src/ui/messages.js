@@ -1,5 +1,6 @@
 // Zeigt kurze Meldungen oben in der Bildschirmmitte (z. B. "Your inventory is full").
 import "./ui.css";
+import SKILL_DATA from "../data/skills.json";
 import { on } from "../core/eventBus.js";
 
 const SHOW_TIME_MS = 2000;
@@ -24,4 +25,5 @@ export function showMessage(text) {
 // Hört auf Spiel-Events und zeigt die passende Meldung.
 export function setupMessages() {
   on("inventoryFull", () => showMessage("Your inventory is full"));
+  on("skillLevelUp", (data) => showMessage(`${SKILL_DATA.skills[data.skill].name} level ${data.level}!`));
 }

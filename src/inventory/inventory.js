@@ -34,6 +34,11 @@ function countFreeSpace(inventory, itemId) {
   return space;
 }
 
+// Prüft, ob die ganze Menge noch ins Inventar passt (z. B. bevor man anfängt, einen Baum zu fällen).
+export function canAddItem(inventory, itemId, amount = 1) {
+  return ITEMS[itemId] !== undefined && countFreeSpace(inventory, itemId) >= amount;
+}
+
 // Legt die Menge ins Inventar, alles oder nichts (false bei zu wenig Platz oder unbekannter ID).
 export function addItem(inventory, itemId, amount = 1) {
   if (ITEMS[itemId] === undefined) {

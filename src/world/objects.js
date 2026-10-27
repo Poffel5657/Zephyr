@@ -25,9 +25,31 @@ function buildTree(scene, position) {
   crown.receiveShadow = true;
   tree.add(crown);
 
+  // Stumpf für gefällte Bäume, am Anfang versteckt
+  const stumpHeight = 0.15;
+  const stump = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.13, stumpHeight),
+    new THREE.MeshStandardMaterial({ color: "#6b4a2b" }),
+  );
+  stump.position.y = stumpHeight / 2;
+  stump.castShadow = true;
+  stump.receiveShadow = true;
+  stump.visible = false;
+  tree.add(stump);
+  tree.userData.standing = [trunk, crown];
+  tree.userData.stump = stump;
+
   tree.position.copy(position);
   scene.add(tree);
   return tree;
+}
+
+// Zeigt beim Baum entweder Stamm + Krone oder nur den Stumpf.
+export function setTreeFelled(tree, felled) {
+  for (const part of tree.userData.standing) {
+    part.visible = !felled;
+  }
+  tree.userData.stump.visible = felled;
 }
 
 // Baut einen Platzhalter-Fels.

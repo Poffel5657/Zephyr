@@ -1,0 +1,22 @@
+{
+  "xpCurve": { "base": 20, "exponent": 1.3 },
+  "maxLevel": 99,
+  "skills": {
+    "woodcutting": {
+      "name": "Woodcutting",
+      "trees": {
+        "tree": {
+          "log": "oak_log",
+          "xp": 25,
+          "bonusXp": 15,
+          "bonusLogs": 1,
+          "respawnSeconds": 15,
+          "zoneSize": 0.15,
+          "zonePerLevel": 0.003,
+          "maxZoneSize": 0.45,
+          "speed": 1.2
+        }
+      }
+    }
+  }
+}

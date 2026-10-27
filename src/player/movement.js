@@ -1,8 +1,9 @@
 // Lässt den Spieler per Klick Feld für Feld zum Ziel laufen (Weg kommt aus findPath).
-import { on } from "../core/eventBus.js";
+// Bei einem Objekt (z. B. Baum) läuft er daneben und meldet "objectReached".
+import { emit, on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
-import { gridToWorld } from "../world/grid.js";
-import { findPath } from "../world/pathfinding.js";
+import { getTile, gridToWorld } from "../world/grid.js";
+import { findPath, findPathToObject } from "../world/pathfinding.js";
 
 // Wie viele Felder der Spieler pro Sekunde läuft.
 const TILES_PER_SECOND = 3;
@@ -12,6 +13,7 @@ let standOffset = 0;
 let path = [];
 let target = null;
 let progress = 0;
+let targetObject = null;
 
 // Meldet den Spieler für Klicks und beim Loop an (erst nach loadGrid und createPlayer aufrufen).
 export function setupPlayerMovement(movingPlayer) {
@@ -22,13 +24,18 @@ export function setupPlayerMovement(movingPlayer) {
 }
 
 // Sucht einen neuen Weg zum geklickten Feld (beim Laufen ab dem Feld, auf das er gerade zuläuft).
+// Steht ein Objekt auf dem Feld, geht der Weg zum nächsten erreichbaren Nachbarfeld.
 function onTileClicked(tile) {
   const from = target !== null ? target : { x: player.x, z: player.z };
-  const newPath = findPath(from, tile);
+  const object = getTile(tile.x, tile.z).object;
+  const newPath = object ? findPathToObject(from, tile) : findPath(from, tile);
   if (newPath === null) {
     return;
   }
 
+  // Ein neuer Weg bricht ab, was der Spieler gerade macht (z. B. Fällen)
+  emit("actionCancelled", { character: player });
+  targetObject = object ? { x: tile.x, z: tile.z, object: object } : null;
   path = newPath;
   if (target === null) {
     startNextStep();
@@ -39,6 +46,9 @@ function onTileClicked(tile) {
 function startNextStep() {
   if (path.length === 0) {
     target = null;
+    if (targetObject !== null) {
+      reachObject();
+    }
     return;
   }
 
@@ -65,6 +75,13 @@ function updateMovement(deltaTime) {
   const fromPosition = gridToWorld(player.x, player.z);
   const toPosition = gridToWorld(target.x, target.z);
   placeMesh(fromPosition.lerp(toPosition, progress));
+}
+
+// Dreht den Spieler zum Objekt und meldet, dass er davor steht.
+function reachObject() {
+  turnTowards(targetObject);
+  emit("objectReached", { character: player, x: targetObject.x, z: targetObject.z, object: targetObject.object });
+  targetObject = null;
 }
 
 // Stellt das Mesh an eine Position oben auf dem Feld.

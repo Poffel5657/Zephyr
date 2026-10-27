@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { gridToWorld } from "../world/grid.js";
-import { createInventory } from "../inventory/inventory.js";
+import { createInventory, addItem } from "../inventory/inventory.js";
+import { createSkills } from "../skills/skills.js";
 
 export function createPlayer(scene, x, z) {
   // 1. Größe festlegen (Gesamthöhe = Mittelteil + 2 × Radius)
@@ -23,11 +24,16 @@ export function createPlayer(scene, x, z) {
   mesh.castShadow = true;
   scene.add(mesh);
 
-  // 5. Erst jetzt den Zettel schreiben und zurückgeben
+  // 5. Start-Ausrüstung: eine Axt zum Holzfällen
+  const inventory = createInventory();
+  addItem(inventory, "copper_axe");
+
+  // 6. Erst jetzt den Zettel schreiben und zurückgeben
   return {
     x: x,
     z: z,
     mesh: mesh,
-    inventory: createInventory(),
+    inventory: inventory,
+    skills: createSkills(),
   };
 }
