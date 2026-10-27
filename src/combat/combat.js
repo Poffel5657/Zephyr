@@ -18,6 +18,8 @@ const FLEE_DISTANCE = CHARACTER_DATA.combat.fleeDistance;
 // Pausen im Gegner-Zug (Sekunden), damit man sieht, was passiert
 const ENEMY_THINK_TIME = 0.4;
 const ENEMY_AFTER_ACTION_TIME = 0.4;
+// Pause nach dem eigenen Angriff (sonst verschwindet ein besiegter Gegner ohne sichtbaren Treffer)
+const AFTER_ATTACK_TIME = 0.4;
 // Gegner laufen genauso schnell wie der Spieler
 const ENEMY_TILES_PER_SECOND = 3;
 // Nach einer Flucht so lange keine Aggro, damit der Gegner nicht sofort wieder angreift
@@ -37,8 +39,6 @@ const BLOCK_DAMAGE = {
   good: (damage) => Math.floor(damage / 2),
   miss: (damage) => damage,
 };
-// Technik für den nächsten Angriff des Spielers (nach dem Benutzen wieder "attack")
-let selectedTechnique = "attack";
 
 // Gibt zurück, ob gerade gekämpft wird.
 export function isInCombat() {
@@ -85,19 +85,34 @@ export function getCombatState() {
   };
 }
 
-// Gibt die ausgewählte Technik für den nächsten Angriff zurück.
-export function getSelectedTechnique() {
-  return selectedTechnique;
-}
-
-// Wählt die Technik für den nächsten Angriff (z. B. aus der Technik-Leiste). false, wenn sie gerade nicht geht.
-export function selectTechnique(techniqueId) {
-  if (!isPlayerTurn() || !hasTechnique(player, techniqueId) || getCooldown(player, techniqueId) > 0) {
-    return false;
+// Benutzt eine Technik auf einen Gegner (aus dem Aktions-Menü): daneben → sofort,
+// sonst erst hinlaufen, wenn die Felder in diesem Zug reichen.
+export function useTechnique(techniqueId, enemy) {
+  if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
+    return;
   }
-  selectedTechnique = techniqueId;
-  emitTurnUpdated();
-  return true;
+  if (combat.actionUsed) {
+    showMessage("You already acted this turn");
+    return;
+  }
+  if (!hasTechnique(player, techniqueId) || getCooldown(player, techniqueId) > 0) {
+    return;
+  }
+  if (isAdjacent(player, enemy)) {
+    playerCombo(enemy, techniqueId);
+    return;
+  }
+
+  const path = findPathToObject({ x: player.x, z: player.z }, { x: enemy.x, z: enemy.z });
+  if (path === null || path.length > combat.moveLeft) {
+    showMessage("Too far away");
+    return;
+  }
+  walkPlayer(path, () => {
+    if (combat !== null && enemy.alive) {
+      playerCombo(enemy, techniqueId);
+    }
+  });
 }
 
 // Prüft, ob der Charakter gerade essen darf (null = ja, sonst der Grund als Meldung). Für setupFood.
@@ -125,12 +140,9 @@ export function setupCombat(character) {
     }
   });
 
-  // Im Kampf: Rechtsklick auf Gegner = angreifen, Klick auf Feld = laufen
-  on("attackIntent", ({ enemy }) => {
-    if (combat !== null) {
-      playerAttack(enemy);
-    }
-  });
+  // Im Kampf: Links- oder Rechtsklick auf einen Gegner öffnet das Aktions-Menü, Klick auf ein Feld = laufen
+  on("enemyClicked", ({ enemy }) => openActionMenu(enemy));
+  on("attackIntent", ({ enemy }) => openActionMenu(enemy));
   on("tileClicked", (tile) => {
     if (combat !== null) {
       playerMove(tile);
@@ -257,7 +269,6 @@ function nextTurn() {
   combat.moveLeft = getMoveRange(fighter);
   combat.actionUsed = false;
   combat.busy = false;
-  selectedTechnique = "attack";
   tickCooldowns(fighter);
   emit("turnStarted", { combatant: fighter, isPlayer: fighter === player, round: combat.round });
   emitTurnUpdated();
@@ -284,8 +295,8 @@ function playerMove(tile) {
   walkPlayer(path, () => {});
 }
 
-// Spieler greift einen Gegner an: direkt, wenn er daneben steht, sonst erst hinlaufen (wenn die Felder reichen).
-function playerAttack(enemy) {
+// Klick auf einen Gegner im eigenen Zug: Aktions-Menü öffnen ("actionMenuOpened", die Anzeige baut es).
+function openActionMenu(enemy) {
   if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
     return;
   }
@@ -293,21 +304,7 @@ function playerAttack(enemy) {
     showMessage("You already acted this turn");
     return;
   }
-  if (isAdjacent(player, enemy)) {
-    playerCombo(enemy);
-    return;
-  }
-
-  const path = findPathToObject({ x: player.x, z: player.z }, { x: enemy.x, z: enemy.z });
-  if (path === null || path.length > combat.moveLeft) {
-    showMessage("Too far away");
-    return;
-  }
-  walkPlayer(path, () => {
-    if (combat !== null && enemy.alive) {
-      playerCombo(enemy);
-    }
-  });
+  emit("actionMenuOpened", { enemy });
 }
 
 // Lässt den Spieler einen Weg im Kampf laufen und zieht die Felder ab.
@@ -327,11 +324,11 @@ function walkPlayer(path, onDone) {
   });
 }
 
-// Angriff des Spielers als Rhythmus-Combo mit der ausgewählten Technik:
-// Ausweichen würfeln, erster Schlag trifft sicher, jeder getroffene Takt hängt einen Zusatzschlag an.
-async function playerCombo(enemy) {
-  const technique = getTechnique(selectedTechnique);
-  selectedTechnique = "attack";
+// Angriff des Spielers: Ausweichen würfeln, erster Schlag trifft sicher. Hat die Technik ein Muster (Cleave),
+// folgt eine Rhythmus-Combo, jeder getroffene Takt hängt einen Zusatzschlag an. Der normale Angriff hat keins.
+async function playerCombo(enemy, techniqueId) {
+  const technique = getTechnique(techniqueId);
+  const pattern = technique.pattern;
   combat.actionUsed = true;
   combat.busy = true;
   startCooldown(player, technique.id);
@@ -353,23 +350,23 @@ async function playerCombo(enemy) {
     emit("attackResolved", { attacker: player, target: enemy, damage: 0, dodged: true, technique: technique.id, hit: 0 });
   } else {
     hit(technique.firstHit ?? 1, 0);
-    if (enemy.hp > 0) {
+    // Die Combo läuft immer zu Ende, auch wenn schon der erste Schlag reicht (Zusatzschläge = Overkill).
+    // Der Gegner verschwindet erst danach.
+    if (pattern.length > 0) {
       results = await startRhythm({
-        pattern: technique.pattern,
+        pattern: pattern,
         target: enemy.mesh,
         stopAtMiss: true,
         onBeat: (index, result) => {
-          if (result === "miss") {
-            return;
-          }
-          hit(technique.pattern[index].damage, index + 1);
-          if (enemy.hp === 0) {
-            stopRhythm();
+          if (result !== "miss") {
+            hit(pattern[index].damage, index + 1);
           }
         },
       });
     }
   }
+  // Kurz warten, damit man den Treffer sieht, bevor der Gegner verschwindet
+  await wait(AFTER_ATTACK_TIME);
 
   emit("comboEnded", { attacker: player, target: enemy, technique: technique.id, results, hits, dodged });
   if (combat === null) {
@@ -496,7 +493,6 @@ function updateEnemyStep(deltaTime) {
 function endCombat(result, lastEnemy = null) {
   const enemies = combat.enemies;
   combat = null;
-  selectedTechnique = "attack";
   stopRhythm();
   waits.length = 0;
   setOccupied(player.x, player.z, false);

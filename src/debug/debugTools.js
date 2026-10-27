@@ -5,7 +5,6 @@ import { saveGame } from "../save/save.js";
 import { takeDamage, heal } from "../character/character.js";
 import { getTechniques, getCooldown, getTechnique } from "../combat/techniques.js";
 import { startRhythm } from "../combat/rhythm.js";
-import { selectTechnique } from "../combat/combat.js";
 
 // Schreibt Events in die Konsole und stellt window.debug für diesen Charakter bereit.
 export function setupDebugTools(character) {
@@ -26,12 +25,10 @@ export function setupDebugTools(character) {
     heal: (amount) => heal(character, amount),
     // Freie Techniken mit Abklingzeit, z. B. [{ id: "cleave", cooldown: 0 }]
     // Muster einer Technik am Spieler abspielen, z. B. debug.rhythm("cleave")
-    rhythm: (techniqueId = "attack") =>
+    rhythm: (techniqueId = "cleave") =>
       startRhythm({ pattern: getTechnique(techniqueId).pattern, target: character.mesh, stopAtMiss: true }).then(
         (results) => console.log("Rhythmus:", results),
       ),
-    // Technik für den nächsten Angriff wählen (bis die Technik-Leiste kommt), z. B. debug.technique("cleave")
-    technique: (techniqueId) => selectTechnique(techniqueId),
     techniques: () => getTechniques(character).map(({ id }) => ({ id, cooldown: getCooldown(character, id) })),
     character: character,
   };

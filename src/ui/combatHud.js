@@ -194,6 +194,11 @@ export function createCombatHud() {
     if (data.dodged) {
       return;
     }
+    // Normaler Angriff ohne Rhythmus: ein einfacher Schlag
+    if (TECHNIQUES[data.technique].pattern.length === 0) {
+      addLogMessage(`${data.attacker.name} hits ${data.target.name} for ${data.hits[0]}`);
+      return;
+    }
     const total = data.hits.reduce((sum, damage) => sum + damage, 0);
     const hitText = data.hits.length === 1 ? "1 hit" : `${data.hits.length} hits`;
     addLogMessage(`${data.attacker.name}'s ${TECHNIQUES[data.technique].name}: ${hitText}, ${total} damage`);

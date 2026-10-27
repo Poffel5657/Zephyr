@@ -1,9 +1,7 @@
 {
   "attack": {
     "name": "Attack",
-    "pattern": [
-      { "key": "right", "after": 0.6, "damage": 0.5 }
-    ]
+    "pattern": []
   },
   "cleave": {
     "name": "Cleave",
