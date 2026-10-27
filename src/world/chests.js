@@ -19,7 +19,7 @@ export function setupChests(player) {
 
     if (progress.chests[key] === undefined) {
       if (!hasItem(player.inventory, chest.key)) {
-        showMessage(`The chest is locked (needs ${ITEMS[chest.key].name})`);
+        showMessage(`The chest is locked (needs ${ITEMS[chest.key].name})`, "warning");
         return;
       }
       // Aufschließen: Schlüssel weg, er fällt danach nicht noch einmal

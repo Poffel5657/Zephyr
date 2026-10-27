@@ -35,7 +35,7 @@ export function setupWoodcutting(character) {
       return;
     }
     if (!canAddItem(character.inventory, tree.log, 1)) {
-      showMessage("Your inventory is full");
+      showMessage("Your inventory is full", "warning");
       return;
     }
 

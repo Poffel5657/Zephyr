@@ -1,4 +1,4 @@
-// Zeigt das Inventar eines Charakters als HTML-Fenster über dem Spiel (öffnen/schließen mit I oder Knopf).
+// Inventar-Reiter im Seitenpanel: 30 Slots wie in OSRS, Gold, Auswahl, Drag & Drop, Eat und Drop.
 import "./ui.css";
 import "./inventoryPanel.css";
 import ITEMS from "../data/items.json";
@@ -6,24 +6,18 @@ import { emit, on } from "../core/eventBus.js";
 import { SLOT_COUNT, getSlots, clearSlot, moveSlot } from "../inventory/inventory.js";
 import { isFood } from "../items/food.js";
 
-const TOGGLE_KEY = "KeyI";
-const HIDDEN_CLASS = "inventory-hidden";
 const SELECTED_CLASS = "inventory-selected";
 const DRAG_ORIGIN_CLASS = "inventory-drag-origin";
 const DROP_TARGET_CLASS = "inventory-drop-target";
 
-// Baut das Fenster mit allen Slots und zeichnet es neu, sobald sich dieses Inventar ändert.
+// Baut den Inhalt des Inventar-Reiters (Gold, Slots, Info-Zeile) und zeichnet ihn neu, sobald sich dieses Inventar ändert.
+// Gibt { content } für das Seitenpanel zurück.
 export function createInventoryPanel(inventory) {
   let selectedIndex = null;
   let draggedIndex = null;
 
   const panel = document.createElement("div");
-  panel.className = "inventory-panel " + HIDDEN_CLASS;
-
-  const title = document.createElement("div");
-  title.className = "inventory-title";
-  title.textContent = "Inventory";
-  panel.appendChild(title);
+  panel.className = "inventory-panel";
 
   // Gold belegt keinen Platz, deshalb eine eigene Zeile über dem Raster
   const gold = document.createElement("div");
@@ -124,7 +118,6 @@ export function createInventoryPanel(inventory) {
     grid.appendChild(slot);
     slotElements.push({ slot, amount });
   }
-  document.body.appendChild(panel);
 
   eatButton.addEventListener("click", () => {
     if (selectedIndex !== null) {
@@ -153,19 +146,6 @@ export function createInventoryPanel(inventory) {
     }
   });
 
-  const button = document.createElement("button");
-  button.className = "ui-button inventory-button";
-  button.textContent = "Inventory";
-  document.body.appendChild(button);
-
-  const toggle = () => panel.classList.toggle(HIDDEN_CLASS);
-  button.addEventListener("click", toggle);
-  addEventListener("keydown", (event) => {
-    if (event.code === TOGGLE_KEY && !event.repeat) {
-      toggle();
-    }
-  });
-
   on("inventoryChanged", (data) => {
     if (data.inventory === inventory) {
       updateSlots(inventory, slotElements);
@@ -177,6 +157,7 @@ export function createInventoryPanel(inventory) {
   updateSlots(inventory, slotElements);
   gold.textContent = `Gold: ${inventory.gold}`;
   updateSelection();
+  return { content: panel };
 }
 
 // Färbt jeden Slot in der Farbe seines Items und schreibt die Anzahl dazu (nur bei Stapeln über 1).

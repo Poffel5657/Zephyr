@@ -11,7 +11,7 @@
   background-color: var(--ui-bg);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ui-shadow);
   user-select: none;
   z-index: 30;
 }
@@ -23,14 +23,14 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
 
 .action-menu-button:hover:not(:disabled) {
-  border-color: #ffd700;
+  border-color: var(--ui-gold);
 }
 
 .action-menu-button:disabled {

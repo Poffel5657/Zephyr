@@ -1,4 +1,5 @@
-// Zeigt die Kampf-Oberfläche: Zugreihenfolge, Runden-Aktionen, Kampf-Log und Gegner-Info.
+// Zeigt die Kampf-Oberfläche: Zugreihenfolge (oben), End Turn (unten Mitte) und Gegner-Info.
+// Was im Kampf passiert, schreibt sie ins Log (Chat unten links).
 import "./ui.css";
 import "./combatHud.css";
 import ITEMS from "../data/items.json";
@@ -6,9 +7,9 @@ import TECHNIQUES from "../data/techniques.json";
 import { on, emit } from "../core/eventBus.js";
 import { isPlayerTurn } from "../combat/combat.js";
 import { getMaxHp } from "../character/character.js";
+import { logMessage } from "./chatLog.js";
 
 const HIDDEN_CLASS = "combat-hidden";
-const LOG_HIDE_DELAY_MS = 4000;
 
 // Erstellt alle HUD-Elemente für den rundenbasierten Kampf und registriert Event-Listener.
 export function createCombatHud() {
@@ -16,11 +17,10 @@ export function createCombatHud() {
   let currentOrder = [];
   let currentCombatant = null;
   let selectedEnemy = null;
-  let logHideTimer = null;
 
   // Leiste für die Zugreihenfolge oben in der Mitte
   const turnOrderBar = document.createElement("div");
-  turnOrderBar.className = "combat-order-bar " + HIDDEN_CLASS;
+  turnOrderBar.className = "ui-panel combat-order-bar " + HIDDEN_CLASS;
   document.body.appendChild(turnOrderBar);
 
   // Steuerung unten in der Mitte: Zug beenden Knopf und Zug-Status
@@ -33,19 +33,14 @@ export function createCombatHud() {
   turnPanel.appendChild(endTurnButton);
 
   const turnStatus = document.createElement("span");
-  turnStatus.className = "combat-turn-status";
+  turnStatus.className = "ui-panel combat-turn-status";
   turnPanel.appendChild(turnStatus);
 
   document.body.appendChild(turnPanel);
 
-  // Kampf-Log oben links
-  const logPanel = document.createElement("div");
-  logPanel.className = "combat-log " + HIDDEN_CLASS;
-  document.body.appendChild(logPanel);
-
   // Info-Anzeige für den anvisierten Gegner
   const enemyInfoPanel = document.createElement("div");
-  enemyInfoPanel.className = "combat-enemy-info " + HIDDEN_CLASS;
+  enemyInfoPanel.className = "ui-panel combat-enemy-info " + HIDDEN_CLASS;
   document.body.appendChild(enemyInfoPanel);
 
   // Zeichnet die Namens-Chips der Zugreihenfolge neu
@@ -70,23 +65,9 @@ export function createCombatHud() {
     }
   }
 
-  // Schreibt eine neue Zeile in das Kampf-Log (maximal die letzten 5 Zeilen behalten)
+  // Schreibt eine Kampf-Zeile ins Log
   function addLogMessage(text) {
-    const line = document.createElement("div");
-    line.className = "combat-log-line";
-    line.textContent = text;
-    logPanel.appendChild(line);
-
-    while (logPanel.children.length > 5) {
-      logPanel.removeChild(logPanel.firstChild);
-    }
-  }
-
-  // Leert das gesamte Kampf-Log
-  function clearLog() {
-    while (logPanel.firstChild) {
-      logPanel.removeChild(logPanel.firstChild);
-    }
+    logMessage(text, "combat");
   }
 
   // Aktualisiert die Anzeige des ausgewählten Gegners (auch außerhalb vom Kampf, Auswahl per Linksklick)
@@ -114,10 +95,6 @@ export function createCombatHud() {
     currentOrder = [];
     currentCombatant = null;
 
-    clearTimeout(logHideTimer);
-    clearLog();
-    logPanel.classList.remove(HIDDEN_CLASS);
-
     renderTurnOrder();
     turnOrderBar.classList.remove(HIDDEN_CLASS);
 
@@ -128,7 +105,8 @@ export function createCombatHud() {
     updateEnemyInfo();
   });
 
-  on("combatEnded", (data) => {
+  // Sieg / Niederlage / Flucht stehen schon als Meldung im Log (combatEnd.js)
+  on("combatEnded", () => {
     inCombat = false;
     currentOrder = [];
     currentCombatant = null;
@@ -136,19 +114,6 @@ export function createCombatHud() {
     turnOrderBar.classList.add(HIDDEN_CLASS);
     turnPanel.classList.add(HIDDEN_CLASS);
     updateEnemyInfo();
-
-    if (data.result === "victory") {
-      addLogMessage("Victory!");
-    } else if (data.result === "defeat") {
-      addLogMessage("You were defeated");
-    } else if (data.result === "fled") {
-      addLogMessage("You escaped");
-    }
-
-    clearTimeout(logHideTimer);
-    logHideTimer = setTimeout(() => {
-      logPanel.classList.add(HIDDEN_CLASS);
-    }, LOG_HIDE_DELAY_MS);
   });
 
   on("turnStarted", () => {
@@ -210,10 +175,8 @@ export function createCombatHud() {
   });
 
   on("itemEaten", (data) => {
-    if (inCombat) {
-      const itemName = ITEMS[data.item]?.name || data.item;
-      addLogMessage(`${data.character.name} eats a ${itemName} (+${data.healed} HP)`);
-    }
+    const itemName = ITEMS[data.item]?.name || data.item;
+    logMessage(`${data.character.name} eats a ${itemName} (+${data.healed} HP)`, inCombat ? "combat" : "info");
   });
 
   on("enemyDefeated", (data) => {

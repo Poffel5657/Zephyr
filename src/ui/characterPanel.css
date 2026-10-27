@@ -1,18 +1,7 @@
 /* Charakter-Fenster. */
 /* Charakter-Fenster, Werte und Umschalt-Knopf */
 .character-panel {
-  position: absolute;
-  left: calc(var(--ui-edge) + 210px);
-  bottom: 60px;
-  width: 200px;
-  box-sizing: border-box;
-  padding: 10px;
-  background-color: var(--ui-bg);
-  border: var(--ui-border);
-  border-radius: var(--ui-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   user-select: none;
-  z-index: 10;
 }
 
 .character-hidden {
@@ -21,8 +10,8 @@
 
 .character-title {
   margin-bottom: 6px;
-  color: var(--ui-text);
-  font-family: sans-serif;
+  color: var(--ui-accent);
+  font-family: var(--ui-font);
   font-size: 14px;
   font-weight: bold;
   text-align: center;
@@ -35,7 +24,7 @@
 .character-points {
   margin-bottom: 4px;
   color: var(--ui-text);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 12px;
 }
 
@@ -62,7 +51,7 @@
   align-items: center;
   justify-content: space-between;
   color: var(--ui-text);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 12px;
 }
 
@@ -90,7 +79,7 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 14px;
   cursor: pointer;
   user-select: none;
@@ -110,7 +99,7 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;
@@ -120,12 +109,6 @@
 .character-confirm-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.character-button {
-  position: absolute;
-  left: calc(var(--ui-edge) + 80px);
-  bottom: 16px;
 }
 
 /* Punkte zurücksetzen (Wind-Essenz) im Charakter-Fenster */
@@ -144,7 +127,7 @@
 .character-reset-text {
   grid-column: 1 / -1;
   color: var(--ui-text);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 12px;
   text-align: center;
 }

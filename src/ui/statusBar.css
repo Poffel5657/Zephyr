@@ -1,0 +1,73 @@
+/* Statusleiste oben links. */
+.status {
+  position: fixed;
+  left: var(--ui-edge);
+  top: var(--ui-edge);
+  width: 230px;
+  padding: 8px 10px;
+  user-select: none;
+  z-index: 10;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Im Kampf: der Spieler ist dran */
+.status-active {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-shadow), 0 0 10px var(--ui-accent-soft);
+}
+
+.status-name {
+  margin-bottom: 6px;
+  color: var(--ui-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 56px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.status-label {
+  color: var(--ui-muted);
+}
+
+.status-bar {
+  height: 8px;
+  overflow: hidden;
+  background-color: var(--ui-bg-dark);
+  border: 1px solid var(--ui-border-color);
+  border-radius: 4px;
+}
+
+.status-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.status-hp .status-fill {
+  background-color: var(--ui-hp);
+}
+
+.status-zep .status-fill {
+  background-color: var(--ui-zep);
+}
+
+.status-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-charges {
+  color: var(--ui-accent);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+.status-charges[hidden] {
+  display: none;
+}

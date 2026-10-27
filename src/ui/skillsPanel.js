@@ -1,22 +1,15 @@
-// Zeigt die Skills eines Charakters als HTML-Fenster über dem Spiel (öffnen/schließen mit K oder Knopf).
+// Skills-Reiter im Seitenpanel: Level, Fortschrittsbalken und XP pro Skill.
 import "./ui.css";
 import "./skillsPanel.css";
 import SKILL_DATA from "../data/skills.json";
 import { on } from "../core/eventBus.js";
 import { getLevel, getXpForLevel } from "../skills/skills.js";
 
-const TOGGLE_KEY = "KeyK";
-const HIDDEN_CLASS = "skills-hidden";
 
-// Baut das Fenster mit allen Skills und zeichnet es neu, sobald sich die Skills ändern.
+// Baut den Inhalt des Skills-Reiters und zeichnet ihn neu, sobald sich die Skills ändern. Gibt { content } zurück.
 export function createSkillsPanel(character) {
   const panel = document.createElement("div");
-  panel.className = "skills-panel " + HIDDEN_CLASS;
-
-  const title = document.createElement("div");
-  title.className = "skills-title";
-  title.textContent = "Skills";
-  panel.appendChild(title);
+  panel.className = "skills-panel";
 
   const list = document.createElement("div");
   list.className = "skills-list";
@@ -56,20 +49,6 @@ export function createSkillsPanel(character) {
     list.appendChild(row);
     skillElements[skillId] = { level, barFill, xp };
   }
-  document.body.appendChild(panel);
-
-  const button = document.createElement("button");
-  button.className = "ui-button skills-button";
-  button.textContent = "Skills";
-  document.body.appendChild(button);
-
-  const toggle = () => panel.classList.toggle(HIDDEN_CLASS);
-  button.addEventListener("click", toggle);
-  addEventListener("keydown", (event) => {
-    if (event.code === TOGGLE_KEY && !event.repeat) {
-      toggle();
-    }
-  });
 
   on("skillsChanged", (data) => {
     if (data.character === character) {
@@ -78,6 +57,7 @@ export function createSkillsPanel(character) {
   });
 
   updateSkills(character, skillElements);
+  return { content: panel };
 }
 
 // Aktualisiert Level, Fortschrittsbalken und XP-Anzeige für jeden Skill.

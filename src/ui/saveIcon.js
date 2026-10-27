@@ -1,4 +1,4 @@
-// Kleines Symbol unten in der Mitte, das bei jedem Speichern kurz aufblinkt.
+// Kleines Symbol oben rechts neben "Menu", das bei jedem Speichern kurz aufblinkt.
 import "./ui.css";
 import "./saveIcon.css";
 import { on } from "../core/eventBus.js";

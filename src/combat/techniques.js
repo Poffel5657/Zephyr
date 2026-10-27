@@ -79,7 +79,7 @@ export function setupTechniqueEvents(character) {
       if (technique.skill === data.skill && technique.level > oldLevel && technique.level <= data.level) {
         // Ohne Werkzeug ist die Technik noch nicht benutzbar
         const note = technique.tool && !hasToolFor(character.inventory, technique.skill) ? " (needs a tool)" : "";
-        showMessage(`New technique: ${technique.name}${note}`);
+        showMessage(`New technique: ${technique.name}${note}`, "level");
       }
     }
   });

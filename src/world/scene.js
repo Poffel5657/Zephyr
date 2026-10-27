@@ -37,6 +37,9 @@ import { setupCameraFollow } from "./cameraFollow.js";
 import { loadGame, setupAutoSave } from "../save/save.js";
 import { setupSaveIcon } from "../ui/saveIcon.js";
 import { createMenu } from "../ui/menu.js";
+import { createSidePanel } from "../ui/sidePanel.js";
+import { createStatusBar } from "../ui/statusBar.js";
+import { createChatLog } from "../ui/chatLog.js";
 
 export const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
@@ -76,11 +79,16 @@ setupCombat(player);
 setupRhythm(camera);
 
 // ---------- Fenster und Anzeigen ----------
-createInventoryPanel(player.inventory);
-createSkillsPanel(player);
-createCharacterPanel(player);
+// Layout: Statusleiste oben links, Chat unten links, Seitenpanel unten rechts, Menü oben rechts
+createStatusBar(player);
+createChatLog();
+// Seitenpanel unten rechts mit Reitern (Tasten I / K / C / R)
+const sidePanel = createSidePanel();
+sidePanel.addTab({ id: "inventory", label: "Inventory", key: "KeyI", ...createInventoryPanel(player.inventory) });
+sidePanel.addTab({ id: "skills", label: "Skills", key: "KeyK", ...createSkillsPanel(player) });
+sidePanel.addTab({ id: "character", label: "Character", key: "KeyC", ...createCharacterPanel(player) });
 // Nach Laufen und Kampf: Das Riding-Menü setzt beim Sprung-Klick den Klick-Modus zurück, die anderen sollen ihn vorher noch sehen
-createRidingMenu(player, scene);
+sidePanel.addTab({ id: "riding", label: "Riding", key: "KeyR", ...createRidingMenu(player, scene) });
 createCombatHud();
 createHpBars(player, enemies, camera);
 createActionMenu(player, camera);

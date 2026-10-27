@@ -1,18 +1,21 @@
-// Zeigt kurze Meldungen oben in der Bildschirmmitte (z. B. "Your inventory is full").
+// Zeigt kurze Meldungen oben in der Bildschirmmitte (z. B. "Your inventory is full") und schreibt sie ins Log.
 import "./ui.css";
 import "./messages.css";
 import SKILL_DATA from "../data/skills.json";
 import { on } from "../core/eventBus.js";
+import { logMessage } from "./chatLog.js";
 
 const SHOW_TIME_MS = 2000;
 const VISIBLE_CLASS = "ui-message-visible";
 
 const messageElement = document.createElement("div");
-messageElement.className = "ui-message";
+messageElement.className = "ui-panel ui-message";
 let hideTimer = null;
 
-// Blendet die Meldung kurz ein (eine neue Meldung ersetzt die alte und startet die Zeit neu).
-export function showMessage(text) {
+// Blendet die Meldung kurz ein (eine neue Meldung ersetzt die alte und startet die Zeit neu) und schreibt sie ins Log.
+// kind bestimmt die Farbe im Log ("info", "combat", "loot", "level", "warning").
+export function showMessage(text, kind = "info") {
+  logMessage(text, kind);
   if (!messageElement.isConnected) {
     document.body.appendChild(messageElement);
   }
@@ -25,7 +28,7 @@ export function showMessage(text) {
 
 // Hört auf Spiel-Events und zeigt die passende Meldung.
 export function setupMessages() {
-  on("inventoryFull", () => showMessage("Your inventory is full"));
-  on("skillLevelUp", (data) => showMessage(`${SKILL_DATA.skills[data.skill].name} level ${data.level}!`));
-  on("characterLevelUp", (data) => showMessage(`Level ${data.level}! You have ${data.points} points to spend`));
+  on("inventoryFull", () => showMessage("Your inventory is full", "warning"));
+  on("skillLevelUp", (data) => showMessage(`${SKILL_DATA.skills[data.skill].name} level ${data.level}!`, "level"));
+  on("characterLevelUp", (data) => showMessage(`Level ${data.level}! You have ${data.points} points to spend`, "level"));
 }

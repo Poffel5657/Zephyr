@@ -1,0 +1,72 @@
+/* Chat / Log unten links. */
+.chat {
+  position: fixed;
+  left: var(--ui-edge);
+  bottom: var(--ui-edge);
+  width: 340px;
+  max-width: calc(100vw - 252px - 4 * var(--ui-edge));
+  padding: 6px 8px 8px;
+  z-index: 10;
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: var(--ui-accent);
+  font-size: 13px;
+}
+
+.chat-toggle {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  color: var(--ui-muted);
+  border: var(--ui-border);
+  border-radius: 4px;
+  font-family: var(--ui-font);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-toggle:hover {
+  color: var(--ui-text);
+  border-color: var(--ui-accent);
+}
+
+.chat-list {
+  height: 140px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.chat-line {
+  color: var(--ui-text);
+  overflow-wrap: anywhere;
+}
+
+.chat-combat {
+  color: #ffc6a8;
+}
+
+.chat-loot {
+  color: var(--ui-gold);
+}
+
+.chat-level {
+  color: var(--ui-accent);
+}
+
+.chat-warning {
+  color: var(--ui-bad);
+}
+
+/* Eingeklappt: nur die letzte Zeile */
+.chat-collapsed .chat-list {
+  height: 1.35em;
+  overflow: hidden;
+}

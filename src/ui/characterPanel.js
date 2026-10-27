@@ -1,4 +1,4 @@
-// Zeigt die Attribute und Level-Werte eines Charakters als HTML-Fenster (öffnen/schließen mit C oder Knopf).
+// Charakter-Reiter im Seitenpanel: Grundwerte, Level, HP/ZEP, Punkte verteilen (Entwurf + Confirm) und zurücksetzen.
 import "./ui.css";
 import "./characterPanel.css";
 import { on } from "../core/eventBus.js";
@@ -6,7 +6,6 @@ import { getLevelProgress, getMaxHp, getMaxZep, spendPoints, resetStatPoints, ge
 import { hasItem, removeItem } from "../inventory/inventory.js";
 import { isInCombat } from "../combat/combat.js";
 
-const TOGGLE_KEY = "KeyC";
 const HIDDEN_CLASS = "character-hidden";
 // Dieses Item kostet das Zurücksetzen aller Punkte
 const RESET_ITEM = "wind_essence";
@@ -19,7 +18,8 @@ const STATS = [
   { key: "agi", label: "AGI" },
 ];
 
-// Baut das Fenster mit allen Werten und aktualisiert es bei Änderungen oder Werteverteilung.
+// Baut den Inhalt des Character-Reiters (Werte, + / −, Confirm, Reset). Gibt { content, onHide } zurück:
+// onHide verwirft den Entwurf, wenn man den Reiter verlässt.
 export function createCharacterPanel(character) {
   // Entwurf: ausprobierte, aber noch nicht bestätigte Punkte pro Wert
   const draft = { str: 0, vit: 0, zep: 0, agi: 0 };
@@ -31,7 +31,7 @@ export function createCharacterPanel(character) {
   const update = () => updateCharacter(character, elements, draft);
 
   const panel = document.createElement("div");
-  panel.className = "character-panel " + HIDDEN_CLASS;
+  panel.className = "character-panel";
 
   const title = document.createElement("div");
   title.className = "character-title";
@@ -157,12 +157,6 @@ export function createCharacterPanel(character) {
     }
   });
 
-  document.body.appendChild(panel);
-
-  const button = document.createElement("button");
-  button.className = "ui-button character-button";
-  button.textContent = "Character";
-  document.body.appendChild(button);
 
   const elements = {
     level,
@@ -175,22 +169,12 @@ export function createCharacterPanel(character) {
     stats: statElements,
   };
 
-  // Beim Schließen wird der Entwurf verworfen
-  const toggle = () => {
-    const isHidden = panel.classList.toggle(HIDDEN_CLASS);
-    if (isHidden) {
-      resetDraft();
-      showResetAsk(false);
-      update();
-    }
+  // Reiter verlassen oder Panel eingeklappt: Entwurf verwerfen
+  const onHide = () => {
+    resetDraft();
+    showResetAsk(false);
+    update();
   };
-
-  button.addEventListener("click", toggle);
-  addEventListener("keydown", (event) => {
-    if (event.code === TOGGLE_KEY && !event.repeat) {
-      toggle();
-    }
-  });
 
   for (const eventName of ["statsChanged", "hpChanged"]) {
     on(eventName, (data) => {
@@ -209,6 +193,7 @@ export function createCharacterPanel(character) {
   on("combatEnded", update);
 
   update();
+  return { content: panel, onHide };
 }
 
 // Aktualisiert Level, Lebenspunkte, ZEP, Punkte und alle Attribut-Werte inklusive Entwurf.

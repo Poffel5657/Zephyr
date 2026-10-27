@@ -5,6 +5,7 @@ import "./lootWindow.css";
 import ITEMS from "../data/items.json";
 import { addItem, addGold, canAddItem } from "../inventory/inventory.js";
 import { showMessage } from "./messages.js";
+import { logMessage } from "./chatLog.js";
 
 const HIDDEN_CLASS = "loot-hidden";
 
@@ -39,7 +40,7 @@ function closeLootWindow() {
 // Baut das Fenster einmal: Titel, Liste, "Take all" und "Close".
 function buildPanel() {
   panel = document.createElement("div");
-  panel.className = "loot-panel " + HIDDEN_CLASS;
+  panel.className = "ui-panel loot-panel " + HIDDEN_CLASS;
 
   const title = document.createElement("div");
   title.className = "loot-title";
@@ -111,6 +112,7 @@ function createRow(text, color, onTake) {
 function takeGold() {
   if (current.loot.gold > 0) {
     addGold(current.inventory, current.loot.gold);
+    logMessage(`You take ${current.loot.gold} gold`, "loot");
     current.loot.gold = 0;
   }
 }
@@ -123,8 +125,11 @@ function takeItem(entry) {
     taken += 1;
   }
   entry.amount -= taken;
+  if (taken > 0) {
+    logMessage(`You take ${ITEMS[entry.item].name} x${taken}`, "loot");
+  }
   if (entry.amount > 0) {
-    showMessage("Your inventory is full");
+    showMessage("Your inventory is full", "warning");
   } else {
     current.loot.items.splice(current.loot.items.indexOf(entry), 1);
   }

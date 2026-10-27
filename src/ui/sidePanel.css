@@ -1,0 +1,62 @@
+/* Seitenpanel unten rechts: Reiter-Leiste oben, darunter der Inhalt des offenen Reiters. */
+.side-panel {
+  position: fixed;
+  right: var(--ui-edge);
+  bottom: var(--ui-edge);
+  width: 252px;
+  padding: 8px;
+  user-select: none;
+  z-index: 10;
+}
+
+.side-panel-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.side-panel-tab {
+  padding: 6px 2px;
+  background-color: var(--ui-bg-dark);
+  color: var(--ui-muted);
+  border: var(--ui-border);
+  border-radius: 6px;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.side-panel-tab:hover {
+  color: var(--ui-text);
+  border-color: var(--ui-accent);
+}
+
+.side-panel-tab[aria-pressed="true"] {
+  color: var(--ui-accent);
+  background-color: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+}
+
+.side-panel-tab[hidden] {
+  display: none;
+}
+
+.side-panel-body {
+  max-height: min(440px, calc(100vh - 140px));
+  overflow-y: auto;
+}
+
+.side-panel-content[hidden] {
+  display: none;
+}
+
+/* Eingeklappt: nur die Reiter-Leiste */
+.side-panel-collapsed .side-panel-body {
+  display: none;
+}
+
+.side-panel-collapsed .side-panel-tabs {
+  margin-bottom: 0;
+}

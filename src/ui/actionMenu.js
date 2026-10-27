@@ -15,7 +15,7 @@ const MENU_DROP = 0.4;
 // Baut das Menü und hört auf "actionMenuOpened". Es schließt sich bei Auswahl, Cancel, Klick aufs Feld und Zugwechsel.
 export function createActionMenu(player, camera) {
   const menu = document.createElement("div");
-  menu.className = "action-menu " + HIDDEN_CLASS;
+  menu.className = "ui-panel action-menu " + HIDDEN_CLASS;
   document.body.appendChild(menu);
 
   let target = null;

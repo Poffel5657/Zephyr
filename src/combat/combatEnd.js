@@ -35,11 +35,11 @@ export function endCombat(result, lastEnemy = null) {
       }
     }
     state.aggroCooldown = AGGRO_COOLDOWN_AFTER_FLEE;
-    showMessage("You escaped");
+    showMessage("You escaped", "combat");
   } else if (result === "victory") {
-    showMessage(`You defeated ${lastEnemy.name}`);
+    showMessage(`You defeated ${lastEnemy.name}`, "combat");
   } else {
-    showMessage("You were defeated");
+    showMessage("You were defeated", "warning");
   }
   emit("combatEnded", { result, player, enemies });
 }

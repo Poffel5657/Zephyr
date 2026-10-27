@@ -13,7 +13,7 @@
   background-color: var(--ui-bg);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ui-shadow);
   user-select: none;
   z-index: 50;
 }
@@ -26,7 +26,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  background-color: #2ecc71;
+  background-color: var(--ui-good);
 }
 
 .timing-pointer {
@@ -40,11 +40,11 @@
 }
 
 .timing-hit {
-  border-color: #2ecc71;
+  border-color: var(--ui-good);
   box-shadow: 0 0 10px rgba(46, 204, 113, 0.8);
 }
 
 .timing-miss {
-  border-color: #e74c3c;
+  border-color: var(--ui-hp);
   box-shadow: 0 0 10px rgba(231, 76, 60, 0.8);
 }

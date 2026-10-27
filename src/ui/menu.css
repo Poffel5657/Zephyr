@@ -11,14 +11,14 @@
   background-color: var(--ui-bg);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ui-shadow);
   user-select: none;
   z-index: 50;
 }
 
 .menu-title {
-  color: var(--ui-text);
-  font-family: sans-serif;
+  color: var(--ui-accent);
+  font-family: var(--ui-font);
   font-size: 14px;
   font-weight: bold;
   text-align: center;
@@ -47,7 +47,7 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 13px;
   cursor: pointer;
   user-select: none;
@@ -55,7 +55,7 @@
 }
 
 .menu-item-button:hover {
-  background-color: rgba(40, 40, 52, 0.9);
+  border-color: var(--ui-accent);
 }
 
 .menu-item-button:disabled {
@@ -71,7 +71,7 @@
 
 .menu-confirm-text {
   color: var(--ui-text);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 13px;
   line-height: 1.4;
   text-align: center;

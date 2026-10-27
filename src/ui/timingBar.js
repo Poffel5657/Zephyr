@@ -15,7 +15,7 @@ const HIT_CLASS = "timing-hit";
 const MISS_CLASS = "timing-miss";
 
 const bar = document.createElement("div");
-bar.className = "timing-bar " + HIDDEN_CLASS;
+bar.className = "ui-panel timing-bar " + HIDDEN_CLASS;
 const zone = document.createElement("div");
 zone.className = "timing-zone";
 bar.appendChild(zone);

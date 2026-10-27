@@ -1,13 +1,77 @@
-/* Grundlagen für alle Fenster: Farben und Maße als Variablen, gemeinsamer Knopf-Stil. */
+/* Grundlagen für alle Fenster: Schrift, Farben und Maße als Variablen, Rahmen, Titel und Knöpfe. */
+/* Pixel-Schrift (Pixelify Sans, SIL Open Font License, siehe assets/fonts/OFL.txt) */
+@font-face {
+  font-family: "Pixelify Sans";
+  src: url("../assets/fonts/PixelifySans.ttf") format("truetype");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+/* Stil "Himmel & Wind": alle Farben und Maße an einer Stelle */
 :root {
-  --ui-bg: rgba(22, 22, 28, 0.88);
-  --ui-border: 1px solid rgba(255, 255, 255, 0.16);
-  --ui-radius: 6px;
-  --ui-text: #ffffff;
+  --ui-bg: rgba(22, 36, 58, 0.9);
+  --ui-bg-dark: rgba(14, 24, 40, 0.85);
+  --ui-border-color: rgba(255, 255, 255, 0.25);
+  --ui-border: 2px solid var(--ui-border-color);
+  --ui-radius: 8px;
+  --ui-text: #eaf4ff;
+  --ui-muted: #9fb3c8;
+  --ui-accent: #7de8d0;
+  --ui-accent-soft: rgba(125, 232, 208, 0.18);
+  --ui-gold: #ffd84a;
+  --ui-hp: #e05a5a;
+  --ui-zep: #7aa8ff;
+  --ui-good: #5fd68a;
+  --ui-bad: #ff7b7b;
+  --ui-shadow: 0 4px 16px rgba(4, 10, 20, 0.6);
+  --ui-font: "Pixelify Sans", monospace;
   --ui-edge: 16px;
   --slot-size: 40px;
-  --slot-bg: rgba(10, 10, 14, 0.65);
+  --slot-bg: var(--ui-bg-dark);
   --slot-gap: 4px;
+}
+
+/* Alle Texte über dem Spiel in der Pixel-Schrift */
+body {
+  font-family: var(--ui-font);
+  color: var(--ui-text);
+}
+
+button,
+input,
+select {
+  font-family: var(--ui-font);
+}
+
+/* Gemeinsamer Fenster-Rahmen */
+.ui-panel {
+  box-sizing: border-box;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+
+/* Knöpfe in Fenstern: gleiche Hover- und Gesperrt-Regeln überall */
+.ui-panel button:hover:not(:disabled) {
+  border-color: var(--ui-accent);
+}
+
+.ui-panel button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Überschrift in Fenstern, mit kleinem Wind-Zeichen */
+.ui-title {
+  margin-bottom: 8px;
+  color: var(--ui-accent);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
 }
 
 /* Gemeinsamer Stil für alle festen Knöpfe (Inventory, Skills, Character, Riding, Menu, End Turn).
@@ -18,19 +82,19 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  font-family: sans-serif;
-  font-size: 13px;
+  font-family: var(--ui-font);
+  font-size: 14px;
   cursor: pointer;
   user-select: none;
   z-index: 10;
 }
 
 .ui-button:hover:not(:disabled) {
-  background-color: rgba(40, 40, 52, 0.9);
+  border-color: var(--ui-accent);
 }
 
 .ui-button:active:not(:disabled) {
-  background-color: rgba(45, 45, 55, 0.95);
+  background-color: var(--ui-accent-soft);
 }
 
 .ui-button:disabled {

@@ -11,7 +11,7 @@ const HIDDEN_CLASS = "menu-hidden";
 // Baut das Menüfenster, die Aktions-Schaltflächen und den Umschalt-Knopf auf.
 export function createMenu(player) {
   const panel = document.createElement("div");
-  panel.className = "menu-panel " + HIDDEN_CLASS;
+  panel.className = "ui-panel menu-panel " + HIDDEN_CLASS;
 
   const title = document.createElement("div");
   title.className = "menu-title";

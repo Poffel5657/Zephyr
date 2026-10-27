@@ -11,14 +11,15 @@
   background-color: var(--ui-bg);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ui-shadow);
   color: var(--ui-text);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   user-select: none;
   z-index: 40;
 }
 
 .loot-title {
+  color: var(--ui-accent);
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: bold;
@@ -66,7 +67,7 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  font-family: sans-serif;
+  font-family: var(--ui-font);
   font-size: 12px;
   cursor: pointer;
 }

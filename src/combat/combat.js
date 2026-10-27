@@ -87,7 +87,7 @@ function startCombat(triggerEnemy) {
   };
   emit("actionCancelled", { character: player });
   emit("combatStarted", { player: player, enemies: enemies });
-  showMessage(`${triggerEnemy.name} attacks!`);
+  showMessage(`${triggerEnemy.name} attacks!`, "combat");
 }
 
 // Läuft jedes Bild: Pausen, Kampfbeginn, außerhalb vom Kampf Aggro und Wiederkommen.

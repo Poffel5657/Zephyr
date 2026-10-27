@@ -10,8 +10,8 @@
   color: var(--ui-text);
   border: var(--ui-border);
   border-radius: var(--ui-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  font-family: sans-serif;
+  box-shadow: var(--ui-shadow);
+  font-family: var(--ui-font);
   font-size: 13px;
   pointer-events: none;
   z-index: 100;
