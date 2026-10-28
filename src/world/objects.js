@@ -97,10 +97,87 @@ export function setChestOpen(chest) {
   chest.userData.lidHinge.rotation.x = -Math.PI * 0.6;
 }
 
+// Baut eine Platzhalter-Angelstelle auf dem Wasser: heller Wellen-Ring mit rot-weißem Schwimmer.
+function buildFishingSpot(scene, position) {
+  const spot = new THREE.Group();
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.15, 0.25, 32),
+    new THREE.MeshStandardMaterial({ color: "#bfe6ff", transparent: true, opacity: 0.7 }),
+  );
+  // Flach hinlegen, mit der Vorderseite nach oben
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.02;
+  ring.receiveShadow = true;
+  spot.add(ring);
+
+  const bobber = new THREE.Group();
+  const bottom = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshStandardMaterial({ color: "#d94040" }));
+  bottom.castShadow = true;
+  bobber.add(bottom);
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshStandardMaterial({ color: "#ffffff" }));
+  top.position.y = 0.06;
+  top.castShadow = true;
+  bobber.add(top);
+  bobber.position.y = 0.02;
+  spot.add(bobber);
+  spot.userData.active = [ring, bobber];
+  spot.userData.bobber = bobber;
+
+  spot.position.copy(position);
+  scene.add(spot);
+  return spot;
+}
+
+// Versteckt Ring und Schwimmer, solange die Angelstelle erschöpft ist.
+export function setFishingSpotDepleted(spot, depleted) {
+  for (const part of spot.userData.active) {
+    part.visible = !depleted;
+  }
+}
+
+// Baut ein Platzhalter-Lagerfeuer: drei Holzscheite im Stern, Steinkreis, leuchtende Flamme.
+function buildCampfire(scene, position) {
+  const campfire = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({ color: "#6b4a2b" });
+  for (let i = 0; i < 3; i++) {
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.5), wood);
+    log.rotation.z = Math.PI / 2;
+    log.rotation.y = (i * Math.PI) / 3;
+    log.position.y = 0.05;
+    log.castShadow = true;
+    log.receiveShadow = true;
+    campfire.add(log);
+  }
+
+  const stoneMaterial = new THREE.MeshStandardMaterial({ color: "#7a8087" });
+  for (let i = 0; i < 6; i++) {
+    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07), stoneMaterial);
+    const angle = (i * Math.PI) / 3;
+    stone.position.set(Math.cos(angle) * 0.3, 0.05, Math.sin(angle) * 0.3);
+    stone.castShadow = true;
+    stone.receiveShadow = true;
+    campfire.add(stone);
+  }
+
+  const flame = new THREE.Mesh(
+    new THREE.ConeGeometry(0.12, 0.35),
+    new THREE.MeshStandardMaterial({ color: "#ff9a3c", emissive: "#ff6a00", emissiveIntensity: 1 }),
+  );
+  flame.position.y = 0.25;
+  campfire.add(flame);
+
+  campfire.position.copy(position);
+  scene.add(campfire);
+  return campfire;
+}
+
 const OBJECT_BUILDERS = {
   tree: buildTree,
   rock: buildRock,
   chest: buildChest,
+  fishing_chest: buildChest,
+  fishing_spot: buildFishingSpot,
+  campfire: buildCampfire,
 };
 
 // Baut das Objekt mit diesem Namen und gibt es zurück (null + Warnung bei unbekanntem Namen).

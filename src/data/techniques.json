@@ -17,5 +17,26 @@
       { "key": "up", "after": 0.35, "damage": 0.5 },
       { "key": "right", "after": 0.7, "damage": 1 }
     ]
+  },
+  "reel_in": {
+    "name": "Reel In",
+    "skill": "fishing",
+    "level": 5,
+    "tool": true,
+    "cooldown": 3,
+    "free": true,
+    "effect": "pull",
+    "range": 3,
+    "xp": 10,
+    "fallXp": 15,
+    "pattern": []
+  },
+  "quick_snack": {
+    "name": "Quick Snack",
+    "skill": "cooking",
+    "level": 5,
+    "passive": true,
+    "xp": 5,
+    "pattern": []
   }
 }

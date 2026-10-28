@@ -55,3 +55,8 @@
   opacity: 0.8;
 }
 
+/* Nächste Technik des Skills, klein und gedämpft */
+.skills-next {
+  font-size: 10px;
+  color: var(--ui-muted);
+}

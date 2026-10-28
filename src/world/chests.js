@@ -1,4 +1,4 @@
-// Truhen: verschlossen, ein Schlüssel öffnet sie. Der Inhalt kommt ins Loot-Fenster, was man nicht nimmt,
+// Truhen: verschlossen, ein Schlüssel öffnet sie (ohne "key" in chests.json ist sie offen). Der Inhalt kommt ins Loot-Fenster, was man nicht nimmt,
 // bleibt in der Truhe (man kann sie wieder anklicken). Werte in chests.json, Fortschritt im Spielstand.
 import CHESTS from "../data/chests.json";
 import ITEMS from "../data/items.json";
@@ -18,13 +18,15 @@ export function setupChests(player) {
     const progress = player.progress;
 
     if (progress.chests[key] === undefined) {
-      if (!hasItem(player.inventory, chest.key)) {
-        showMessage(`The chest is locked (needs ${ITEMS[chest.key].name})`, "warning");
-        return;
+      if (chest.key !== undefined) {
+        if (!hasItem(player.inventory, chest.key)) {
+          showMessage(`The chest is locked (needs ${ITEMS[chest.key].name})`, "warning");
+          return;
+        }
+        // Aufschließen: Schlüssel weg, er fällt danach nicht noch einmal
+        removeItem(player.inventory, chest.key, 1);
+        progress.onceLoot.push(chest.key);
       }
-      // Aufschließen: Schlüssel weg, er fällt danach nicht noch einmal
-      removeItem(player.inventory, chest.key, 1);
-      progress.onceLoot.push(chest.key);
       progress.chests[key] = structuredClone(chest.contents);
       emit("chestOpened", { x: data.x, z: data.z });
       emit("progressChanged", { character: player });

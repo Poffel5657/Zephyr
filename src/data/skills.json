@@ -18,6 +18,56 @@
         }
       }
     },
+    "fishing": {
+      "name": "Fishing",
+      "spots": {
+        "fishing_spot": {
+          "fish": "raw_fish",
+          "xp": 20,
+          "catches": 3,
+          "respawnSeconds": 20,
+          "waitMin": 2,
+          "waitMax": 5,
+          "biteSeconds": 1,
+          "strikeDistance": 1.5,
+          "lineLength": 3,
+          "fishStamina": 15,
+          "pullPower": 1,
+          "pullPerLevel": 0.01,
+          "maxPullPower": 2,
+          "recoverFactor": 1,
+          "restPerSecond": 0.3,
+          "swimSpeed": 1.5,
+          "turnMin": 1,
+          "turnMax": 2.5,
+          "turnWarning": 0.4,
+          "runSpeed": 3,
+          "runSeconds": 0.8,
+          "runInterval": 3
+        }
+      }
+    },
+    "cooking": {
+      "name": "Cooking",
+      "stations": ["campfire"],
+      "recipes": {
+        "cooked_fish": {
+          "ingredient": "raw_fish",
+          "result": "cooked_fish",
+          "perfect": "perfect_fish",
+          "burnt": "burnt_fish",
+          "xp": 20,
+          "perfectBonusXp": 10,
+          "burntXp": 5,
+          "steps": 4,
+          "totalSeconds": 4,
+          "secondsPerLevel": 0.05,
+          "maxTotalSeconds": 6,
+          "fastSeconds": 2.4,
+          "maxMistakes": 1
+        }
+      }
+    },
     "windriding": {
       "name": "Windriding",
       "jumpXp": 15,

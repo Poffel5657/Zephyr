@@ -1,10 +1,11 @@
 // Speichert den Spielstand im Browser (localStorage) und lädt ihn beim Start wieder.
 // Zwei Spielstände: der Autosave (überschreibt sich ständig) und der eigene Save (nur über "Save" im Menü).
-// Gespeichert werden nur Daten (keine three.js-Objekte): Spieler und gefällte Bäume.
+// Gespeichert werden nur Daten (keine three.js-Objekte): Spieler, gefällte Bäume und erschöpfte Angelstellen.
 import { emit, on } from "../core/eventBus.js";
 import { gridToWorld, isWalkable } from "../world/grid.js";
 import { getSlots, setSlots } from "../inventory/inventory.js";
 import { getFelledTrees, setFelledTrees } from "../skills/woodcutting.js";
+import { getDepletedSpots, setDepletedSpots } from "../skills/fishing.js";
 import { getMaxHp } from "../character/character.js";
 import { showMessage } from "../ui/messages.js";
 
@@ -14,8 +15,10 @@ const MANUAL_KEY = "zephyr-save-manual";
 const BROKEN_KEY = "zephyr-save-broken";
 // Bei neuen Daten in späteren Phasen hochzählen und in applySaveData alte Stände auffüllen
 // Version 2: aktuelle HP (Phase 8), Version 3: Gold und verteilte Punkte (Phase 10),
-// Version 4: Fortschritt (geöffnete Truhen, Einmal-Loot) (Phase 11)
-const SAVE_VERSION = 4;
+// Version 4: Fortschritt (geöffnete Truhen, Einmal-Loot) (Phase 11), Version 5: erschöpfte Angelstellen (Phase 14)
+const SAVE_VERSION = 5;
+// Umbenannte Items: alter Name → neuer Name (Phase 14: aus "fish" wurde "raw_fish")
+const RENAMED_ITEMS = { fish: "raw_fish" };
 
 // Automatisch speichern: nach Änderungen höchstens einmal pro Sekunde, sonst alle 10 Sekunden
 const CHANGE_DELAY_MS = 1000;
@@ -49,6 +52,7 @@ function createSaveData(player) {
     },
     world: {
       felledTrees: getFelledTrees(),
+      depletedSpots: getDepletedSpots(),
     },
   };
 }
@@ -255,7 +259,7 @@ function applySaveData(player, data) {
   // Ältere Stände ohne Gold starten mit 0 (setSlots meldet danach "inventoryChanged", das zeigt auch das Gold)
   player.inventory.gold = Number.isInteger(saved.gold) && saved.gold >= 0 ? saved.gold : 0;
   if (Array.isArray(saved.inventory)) {
-    setSlots(player.inventory, saved.inventory);
+    setSlots(player.inventory, saved.inventory.map(renameItem));
   }
 
   // Nur Skills, die es noch gibt; neue Skills bleiben bei 0
@@ -297,7 +301,7 @@ function applySaveData(player, data) {
   const progress = saved.progress ?? {};
   for (const [key, loot] of Object.entries(progress.chests ?? {})) {
     if (/^\d+,\d+$/.test(key) && Number.isInteger(loot?.gold) && Array.isArray(loot.items)) {
-      player.progress.chests[key] = { gold: loot.gold, items: loot.items.filter((entry) => typeof entry?.item === "string" && Number.isInteger(entry.amount)) };
+      player.progress.chests[key] = { gold: loot.gold, items: loot.items.filter((entry) => typeof entry?.item === "string" && Number.isInteger(entry.amount)).map(renameItem) };
     }
   }
   player.progress.onceLoot = Array.isArray(progress.onceLoot) ? progress.onceLoot.filter((item) => typeof item === "string") : [];
@@ -306,4 +310,13 @@ function applySaveData(player, data) {
   if (Array.isArray(data.world?.felledTrees)) {
     setFelledTrees(data.world.felledTrees);
   }
+  if (Array.isArray(data.world?.depletedSpots)) {
+    setDepletedSpots(data.world.depletedSpots);
+  }
+}
+
+// Gibt einen Platz bzw. Truhen-Eintrag mit dem neuen Item-Namen zurück, falls das Item umbenannt wurde.
+function renameItem(entry) {
+  const newName = RENAMED_ITEMS[entry?.item];
+  return newName === undefined ? entry : { ...entry, item: newName };
 }

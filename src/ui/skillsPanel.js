@@ -1,7 +1,8 @@
-// Skills-Reiter im Seitenpanel: Level, Fortschrittsbalken und XP pro Skill.
+// Skills-Reiter im Seitenpanel: Level, Fortschrittsbalken, XP und nächste Technik pro Skill.
 import "./ui.css";
 import "./skillsPanel.css";
 import SKILL_DATA from "../data/skills.json";
+import TECHNIQUES from "../data/techniques.json";
 import { on } from "../core/eventBus.js";
 import { getLevel, getXpForLevel } from "../skills/skills.js";
 
@@ -46,8 +47,12 @@ export function createSkillsPanel(character) {
     xp.className = "skills-xp";
     row.appendChild(xp);
 
+    const next = document.createElement("div");
+    next.className = "skills-next";
+    row.appendChild(next);
+
     list.appendChild(row);
-    skillElements[skillId] = { level, barFill, xp };
+    skillElements[skillId] = { level, barFill, xp, next };
   }
 
   on("skillsChanged", (data) => {
@@ -78,5 +83,18 @@ function updateSkills(character, skillElements) {
       elements.barFill.style.width = `${progress}%`;
       elements.xp.textContent = `${currentXp} / ${nextLevelXp} XP`;
     }
+    elements.next.textContent = getTechniqueText(skillId, currentLevel);
   }
+}
+
+// Text zur nächsten Technik dieses Skills ("Next: Reel In at Lv 5"), sonst die schon freigeschalteten, sonst leer.
+function getTechniqueText(skillId, level) {
+  const techniques = Object.values(TECHNIQUES)
+    .filter((technique) => technique.skill === skillId)
+    .sort((a, b) => a.level - b.level);
+  const next = techniques.find((technique) => technique.level > level);
+  if (next !== undefined) {
+    return `Next: ${next.name} at Lv ${next.level}`;
+  }
+  return techniques.length > 0 ? `Unlocked: ${techniques.map((technique) => technique.name).join(", ")}` : "";
 }

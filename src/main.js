@@ -4,7 +4,7 @@ import { renderWorld } from "./world/scene.js";
 import { updateCamera } from "./world/camera.js";
 import "./style.css";
 
-addUpdate(updateCamera);
-addUpdate(renderWorld);
+addUpdate(updateCamera, { whilePaused: true });
+addUpdate(renderWorld, { whilePaused: true });
 
 startLoop();

@@ -4,7 +4,9 @@
 // Gegner-Formen, die enemies.js kennt
 const SHAPES = ["gust", "wisp", "crab"];
 // Objekte, die der Map-Editor setzen kann
-const OBJECTS = ["tree", "rock", "chest"];
+const OBJECTS = ["tree", "rock", "chest", "fishing_chest", "fishing_spot", "campfire"];
+// Techniken, die der Code direkt benutzt (Quick Snack schaltet Essen im Kampf frei)
+const REQUIRED_TECHNIQUES = ["attack", "quick_snack"];
 // Items, die der Code direkt benutzt (Start-Axt, Reset-Kosten)
 const REQUIRED_ITEMS = ["copper_axe", "wind_essence"];
 
@@ -73,7 +75,9 @@ export function validateGameData(data) {
     }
   }
 
-  check(techniques.attack !== undefined, `Technik attack (normaler Angriff) darf nicht fehlen`);
+  for (const id of REQUIRED_TECHNIQUES) {
+    check(techniques[id] !== undefined, `Technik ${id} wird vom Spiel gebraucht und darf nicht fehlen`);
+  }
   for (const [id, technique] of Object.entries(techniques)) {
     const where = `Technik ${id}`;
     check(typeof technique.name === "string" && technique.name !== "", `${where}: Name fehlt`);
@@ -83,6 +87,8 @@ export function validateGameData(data) {
       check(isInt(technique.level, 1), `${where}: Level muss ab 1 sein`);
     }
     check(technique.cooldown === undefined || isInt(technique.cooldown), `${where}: Abklingzeit muss eine ganze Zahl sein`);
+    check(technique.effect === undefined || technique.effect === "pull", `${where}: Effekt "${technique.effect}" gibt es nicht (nur "pull")`);
+    check(technique.effect !== "pull" || isInt(technique.range, 2), `${where}: Heranziehen braucht "range" ab 2`);
   }
 
   check(characters.characters?.hero !== undefined, `Charakter hero wird vom Spiel gebraucht`);
@@ -94,6 +100,23 @@ export function validateGameData(data) {
     for (const [treeId, tree] of Object.entries(skill.trees ?? {})) {
       check(items[tree.log] !== undefined, `Skill ${skillId}, Baum ${treeId}: Item "${tree.log}" gibt es nicht`);
     }
+    for (const [spotId, spot] of Object.entries(skill.spots ?? {})) {
+      check(items[spot.fish] !== undefined, `Skill ${skillId}, Angelstelle ${spotId}: Item "${spot.fish}" gibt es nicht`);
+      check(isNumber(spot.waitMin) && isNumber(spot.waitMax) && spot.waitMin <= spot.waitMax, `Skill ${skillId}, Angelstelle ${spotId}: "waitMin" darf nicht größer als "waitMax" sein`);
+      check(isInt(spot.catches, 1), `Skill ${skillId}, Angelstelle ${spotId}: "catches" muss mindestens 1 sein`);
+      check(isNumber(spot.strikeDistance) && isNumber(spot.lineLength) && spot.strikeDistance < spot.lineLength, `Skill ${skillId}, Angelstelle ${spotId}: "strikeDistance" muss kleiner als "lineLength" sein`);
+      check(isNumber(spot.fishStamina) && spot.fishStamina > 0 && isNumber(spot.pullPower) && spot.pullPower > 0, `Skill ${skillId}, Angelstelle ${spotId}: "fishStamina" und "pullPower" müssen größer als 0 sein`);
+      check(isNumber(spot.turnMin) && isNumber(spot.turnMax) && spot.turnMin > 0 && spot.turnMin <= spot.turnMax, `Skill ${skillId}, Angelstelle ${spotId}: "turnMin" muss größer als 0 und nicht größer als "turnMax" sein`);
+      check(isNumber(spot.turnWarning) && spot.turnWarning < spot.turnMin, `Skill ${skillId}, Angelstelle ${spotId}: "turnWarning" muss kleiner als "turnMin" sein`);
+    }
+    for (const [recipeId, recipe] of Object.entries(skill.recipes ?? {})) {
+      for (const key of ["ingredient", "result", "perfect", "burnt"]) {
+        check(items[recipe[key]] !== undefined, `Skill ${skillId}, Rezept ${recipeId}: Item "${recipe[key]}" (${key}) gibt es nicht`);
+      }
+      check(isInt(recipe.steps, 1), `Skill ${skillId}, Rezept ${recipeId}: "steps" muss mindestens 1 sein`);
+      check(isNumber(recipe.totalSeconds) && isNumber(recipe.fastSeconds) && recipe.fastSeconds <= recipe.totalSeconds, `Skill ${skillId}, Rezept ${recipeId}: "fastSeconds" darf nicht größer als "totalSeconds" sein`);
+      check(isInt(recipe.maxMistakes), `Skill ${skillId}, Rezept ${recipeId}: "maxMistakes" muss eine ganze Zahl sein`);
+    }
   }
 
   check(isNumber(rhythm.perfectWindow) && isNumber(rhythm.goodWindow) && rhythm.perfectWindow < rhythm.goodWindow, `Rhythmus: "perfectWindow" muss kleiner als "goodWindow" sein`);
@@ -102,7 +125,7 @@ export function validateGameData(data) {
   }
 
   for (const [id, chest] of Object.entries(data["chests.json"] ?? {})) {
-    check(items[chest.key] !== undefined, `Truhe ${id}: Schlüssel-Item "${chest.key}" gibt es nicht`);
+    check(chest.key === undefined || items[chest.key] !== undefined, `Truhe ${id}: Schlüssel-Item "${chest.key}" gibt es nicht`);
     const contents = chest.contents ?? {};
     check(isInt(contents.gold) && Array.isArray(contents.items) && (contents.gold > 0 || contents.items.length > 0), `Truhe ${id}: braucht Inhalt (Gold oder Items)`);
     for (const entry of contents.items ?? []) {

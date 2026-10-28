@@ -1,5 +1,5 @@
 // Hilfen zum Testen (nur im Dev-Server): wichtige Events in der Konsole mitschreiben
-// und Befehle für die Konsole, z. B. debug.xp(5000) oder debug.item("fish", 3).
+// und Befehle für die Konsole, z. B. debug.xp(5000) oder debug.item("raw_fish", 3).
 import { emit, on } from "../core/eventBus.js";
 import { saveGame } from "../save/save.js";
 import { takeDamage, heal } from "../character/character.js";

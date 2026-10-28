@@ -26,7 +26,12 @@ const OBJECTS = {
   tree: "Baum",
   rock: "Fels",
   chest: "Truhe",
+  fishing_chest: "Angel-Truhe",
+  fishing_spot: "Angelstelle",
+  campfire: "Lagerfeuer",
 };
+// Objekte, die nur auf Wasser stehen (alle anderen nur an Land)
+const WATER_OBJECTS = ["fishing_spot"];
 
 const TOOLS = {
   paint: "Malen",
@@ -315,7 +320,7 @@ function drawTile(tile, x, z) {
       Math.PI * 2,
     );
     ctx.fill();
-  } else if (tile.object === "chest") {
+  } else if (tile.object === "chest" || tile.object === "fishing_chest") {
     // Truhe: brauner Kasten mit hellerem Deckel und goldenem Schloss
     const w = cell * 0.56;
     const h = cell * 0.4;
@@ -338,6 +343,28 @@ function drawTile(tile, x, z) {
     ctx.lineTo(cx + s * 0.3, cz - s);
     ctx.lineTo(cx + s, cz - s * 0.1);
     ctx.lineTo(cx + s * 0.7, cz + s * 0.8);
+    ctx.closePath();
+    ctx.fill();
+  } else if (tile.object === "fishing_spot") {
+    // Angelstelle: heller Ring mit rotem Schwimmer
+    ctx.strokeStyle = "#bfe6ff";
+    ctx.lineWidth = Math.max(1, cell * 0.08);
+    ctx.beginPath();
+    ctx.arc(px + cell / 2, pz + cell / 2, cell * 0.28, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#d94040";
+    ctx.beginPath();
+    ctx.arc(px + cell / 2, pz + cell / 2, cell * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (tile.object === "campfire") {
+    // Lagerfeuer: orange Flamme auf braunem Holz
+    ctx.fillStyle = "#6b4a2b";
+    ctx.fillRect(px + cell * 0.25, pz + cell * 0.6, cell * 0.5, cell * 0.12);
+    ctx.fillStyle = "#ff9a3c";
+    ctx.beginPath();
+    ctx.moveTo(px + cell / 2, pz + cell * 0.2);
+    ctx.lineTo(px + cell * 0.68, pz + cell * 0.6);
+    ctx.lineTo(px + cell * 0.32, pz + cell * 0.6);
     ctx.closePath();
     ctx.fill();
   }
@@ -419,7 +446,7 @@ function applyTool(c) {
   } else if (tool === "lower") {
     if (tile) tile.height = Math.max(MIN_HEIGHT, tile.height - 1);
   } else if (tool === "object") {
-    if (tile && tile.type !== "water") {
+    if (tile && (currentObject === "none" || (tile.type === "water") === WATER_OBJECTS.includes(currentObject))) {
       if (currentObject === "none") delete tile.object;
       else tile.object = currentObject;
     }

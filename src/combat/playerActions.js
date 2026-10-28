@@ -6,27 +6,39 @@ import { findPath, findPathToObject } from "../world/pathfinding.js";
 import { getDodgeChance, takeDamage } from "../character/character.js";
 import { walkPath, jumpTo } from "../player/movement.js";
 import { showMessage } from "../ui/messages.js";
-import { startCooldown, getCooldown, hasTechnique, getTechnique } from "./techniques.js";
+import { startCooldown, getCooldown, hasTechnique, getTechnique, getTechniques } from "./techniques.js";
 import { startRhythm } from "./rhythm.js";
 import { state, isPlayerTurn, emitTurnUpdated, wait, faceTowards } from "./combatState.js";
 import { isAdjacent, isHigher, getScaledDamage } from "./combatRules.js";
 import { defeatEnemy } from "./combatEnd.js";
+import { reelIn, getReelInBlock } from "./reelIn.js";
 
 // Pause nach dem eigenen Angriff (sonst verschwindet ein besiegter Gegner ohne sichtbaren Treffer)
 const AFTER_ATTACK_TIME = 0.4;
 
 // Benutzt eine Technik auf einen Gegner (aus dem Aktions-Menü): daneben → sofort,
-// sonst erst hinlaufen, wenn die Felder in diesem Zug reichen.
+// sonst erst hinlaufen, wenn die Felder in diesem Zug reichen. Reel In ("effect": "pull") wirkt aus der Entfernung.
 export function useTechnique(techniqueId, enemy) {
   const { combat, player } = state;
   if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
     return;
   }
-  if (combat.actionUsed) {
+  const technique = getTechnique(techniqueId);
+  // "free": kostet keine Aktion (geht auch, wenn man schon angegriffen hat)
+  if (combat.actionUsed && !technique.free) {
     showMessage("You already acted this turn");
     return;
   }
   if (!hasTechnique(player, techniqueId) || getCooldown(player, techniqueId) > 0) {
+    return;
+  }
+  if (technique.effect === "pull") {
+    const block = getReelInBlock(player, enemy, technique);
+    if (block !== null) {
+      showMessage(block);
+      return;
+    }
+    reelIn(enemy, technique);
     return;
   }
   if (isAdjacent(player, enemy)) {
@@ -47,9 +59,13 @@ export function useTechnique(techniqueId, enemy) {
 }
 
 // Prüft, ob der Charakter gerade essen darf (null = ja, sonst der Grund als Meldung). Für setupFood.
+// Im Kampf essen geht erst mit der Cooking-Technik Quick Snack und kostet dann die Aktion.
 export function canEatInCombat(character) {
   if (state.combat === null) {
     return null;
+  }
+  if (!hasTechnique(character, "quick_snack")) {
+    return "You need Quick Snack (Cooking 5) to eat in combat";
   }
   if (character !== state.player || !isPlayerTurn()) {
     return "Wait for your turn";
@@ -105,12 +121,14 @@ export function playerMove(tile) {
 }
 
 // Klick auf einen Gegner im eigenen Zug: Aktions-Menü öffnen ("actionMenuOpened", die Anzeige baut es).
+// Ist die Aktion schon verbraucht, geht es nur noch, wenn eine Technik ohne Aktion bereit ist (Reel In).
 export function openActionMenu(enemy) {
-  const { combat } = state;
+  const { combat, player } = state;
   if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
     return;
   }
-  if (combat.actionUsed) {
+  const freeReady = getTechniques(player).some((technique) => technique.free && getCooldown(player, technique.id) === 0);
+  if (combat.actionUsed && !freeReady) {
     showMessage("You already acted this turn");
     return;
   }

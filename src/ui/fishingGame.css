@@ -1,0 +1,161 @@
+/* Angel-Mini-Spiel (Fishing): Status-Panel unten in der Mitte, darüber in der Welt Wasserfeld-Umriss, Schnur und Schwimmer */
+.fishing-game {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  max-width: 80vw;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 50;
+  user-select: none;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  box-sizing: border-box;
+}
+
+.fishing-hidden {
+  display: none;
+}
+
+.fishing-status {
+  text-align: center;
+  color: var(--ui-text);
+}
+
+.fishing-bite .fishing-status {
+  color: var(--ui-accent);
+  animation: fishing-pulse 0.3s alternate infinite;
+}
+
+@keyframes fishing-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.15); }
+}
+
+.fishing-progress {
+  height: 6px;
+  background-color: var(--ui-bg-dark);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+}
+
+.fishing-progress-fill {
+  height: 100%;
+  width: 0;
+  background-color: var(--ui-good);
+}
+
+/* Mitziehen: Der Fisch erholt sich, Balken rot */
+.fishing-recovering .fishing-progress-fill {
+  background-color: var(--ui-hp);
+}
+
+.fishing-waiting .fishing-progress {
+  opacity: 0.4;
+}
+
+.fishing-caught {
+  border-color: var(--ui-good);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.8);
+}
+
+.fishing-lost {
+  border-color: var(--ui-hp);
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.8);
+}
+
+/* Überlagerung über der ganzen Welt, fängt keine Klicks ab */
+.fishing-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 45;
+}
+
+/* Linien sind gedrehte divs: links anfangen, um die linke Mitte drehen */
+.fishing-edge,
+.fishing-line {
+  position: absolute;
+  transform-origin: 0 50%;
+}
+
+.fishing-edge {
+  height: 2px;
+  margin-top: -1px;
+  background-color: var(--ui-accent);
+  opacity: 0.8;
+}
+
+.fishing-bite .fishing-edge {
+  background-color: var(--ui-gold);
+  opacity: 1;
+}
+
+.fishing-reeling .fishing-edge {
+  opacity: 0.3;
+}
+
+.fishing-line {
+  height: 1px;
+  background-color: var(--ui-text);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.fishing-bobber {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(#ffffff 50%, #d94040 50%);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+  transform: translate(-50%, -50%);
+}
+
+/* Pfeil neben dem Schwimmer: in diese Richtung schwimmt der Fisch */
+.fishing-arrow {
+  position: absolute;
+  color: var(--ui-text);
+  font-size: 14px;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  transform: translate(-50%, -50%);
+}
+
+/* Kurz vor dem Umdrehen blinkt der Pfeil */
+.fishing-turning {
+  color: var(--ui-gold);
+  animation: fishing-blink 0.1s alternate infinite;
+}
+
+@keyframes fishing-blink {
+  from { opacity: 1; }
+  to { opacity: 0.2; }
+}
+
+/* Knapp: Schnur rot (Fisch fast weg oder Schnur kurz vorm Reißen) */
+.fishing-strain .fishing-line {
+  height: 2px;
+  background-color: var(--ui-hp);
+}
+
+/* Beim Angeln ist der Schwimmer der Mauszeiger */
+.fishing-no-cursor,
+.fishing-no-cursor * {
+  cursor: none !important;
+}
+
+/* Maus noch nicht gesperrt: Das Overlay fängt den Klick ab (sonst würde man loslaufen) */
+.fishing-needs-click {
+  pointer-events: auto;
+}
+
+.fishing-hint {
+  font-size: 10px;
+  text-align: center;
+  color: var(--ui-muted);
+}

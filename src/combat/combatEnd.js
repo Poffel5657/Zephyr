@@ -10,9 +10,10 @@ import { state, clearWaits } from "./combatState.js";
 const AGGRO_COOLDOWN_AFTER_FLEE = 5;
 
 // Gegner ist besiegt: verschwindet, und wenn keiner mehr steht, ist der Kampf gewonnen.
-export function defeatEnemy(enemy) {
+// details kommt mit ins Event, z. B. { fell: true }, wenn er ins Nichts gefallen ist (dann ohne Loot).
+export function defeatEnemy(enemy, details = {}) {
   removeEnemy(enemy);
-  emit("enemyDefeated", { enemy });
+  emit("enemyDefeated", { enemy, ...details });
   if (state.combat.enemies.every((other) => !other.alive)) {
     endCombat("victory", enemy);
   }

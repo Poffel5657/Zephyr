@@ -4,6 +4,7 @@
 // enemyTurn (Gegner-Zug), combatEnd (Sieg, Niederlage, Flucht). Andere Module importieren nur diese Datei.
 // Alles läuft über Events, damit UI, Speichern und Welt nur zuhören müssen.
 import CHARACTER_DATA from "../data/characters.json";
+import TECHNIQUES from "../data/techniques.json";
 import { emit, on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
 import { setOccupied } from "../world/grid.js";
@@ -17,12 +18,14 @@ import { state, isPlayerTurn, emitTurnUpdated, updateWaits } from "./combatState
 import { getDistance } from "./combatRules.js";
 import { playerMove, openActionMenu } from "./playerActions.js";
 import { runEnemyTurn, setupEnemyTurns } from "./enemyTurn.js";
+import { setupReelIn } from "./reelIn.js";
 import { endCombat } from "./combatEnd.js";
 
 export { isInCombat, isPlayerTurn, getCombatState, getReachableTiles } from "./combatState.js";
 export { useTechnique, canEatInCombat, playerJump } from "./playerActions.js";
 
 const FLEE_DISTANCE = CHARACTER_DATA.combat.fleeDistance;
+const QUICK_SNACK = TECHNIQUES.quick_snack;
 // Gegner, die so nah beim auslösenden Gegner stehen, kämpfen mit (Gruppen)
 const GROUP_RADIUS = 2;
 
@@ -51,14 +54,17 @@ export function setupCombat(character) {
       endPlayerTurn();
     }
   });
+  // Essen im Kampf (Quick Snack) kostet die Aktion und gibt etwas Cooking-XP
   on("itemEaten", (data) => {
     if (state.combat !== null && data.character === character) {
       state.combat.actionUsed = true;
+      emit("xpGained", { character, skill: QUICK_SNACK.skill, amount: QUICK_SNACK.xp });
       emitTurnUpdated();
     }
   });
 
   setupEnemyTurns();
+  setupReelIn();
   addUpdate(updateCombat);
 }
 

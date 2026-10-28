@@ -3,5 +3,9 @@
     "name": "Chest",
     "key": "old_key",
     "contents": { "gold": 0, "items": [{ "item": "wind_boots", "amount": 1 }] }
+  },
+  "fishing_chest": {
+    "name": "Fisher's Chest",
+    "contents": { "gold": 0, "items": [{ "item": "old_fishing_pole", "amount": 1 }] }
   }
 }

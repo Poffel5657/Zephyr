@@ -1,13 +1,16 @@
 // Loot-Fenster in der Bildschirmmitte: Gold und Items einzeln ("Take") oder alles ("Take all") nehmen.
 // Was nicht ins Inventar passt, bleibt stehen. Beim Schließen bekommt onClose den Rest (für den Beutel am Boden).
+// Solange das Fenster offen ist, ist das Spiel pausiert (keine Gegner, kein Laufen, keine Timer).
 import "./ui.css";
 import "./lootWindow.css";
 import ITEMS from "../data/items.json";
 import { addItem, addGold, canAddItem } from "../inventory/inventory.js";
+import { pauseGame, resumeGame } from "../core/loop.js";
 import { showMessage } from "./messages.js";
 import { logMessage } from "./chatLog.js";
 
 const HIDDEN_CLASS = "loot-hidden";
+const PAUSE_REASON = "loot";
 
 let panel = null;
 let list = null;
@@ -23,7 +26,13 @@ export function openLootWindow(inventory, loot, onClose) {
   }
   current = { inventory, loot: { gold: loot.gold, items: loot.items.map((entry) => ({ ...entry })) }, onClose };
   panel.classList.remove(HIDDEN_CLASS);
+  pauseGame(PAUSE_REASON);
   render();
+}
+
+// Ist das Loot-Fenster gerade offen?
+export function isLootWindowOpen() {
+  return current !== null;
 }
 
 // Schließt das Fenster und gibt den Rest an onClose weiter.
@@ -34,6 +43,7 @@ function closeLootWindow() {
   const { loot, onClose } = current;
   current = null;
   panel.classList.add(HIDDEN_CLASS);
+  resumeGame(PAUSE_REASON);
   onClose(loot);
 }
 

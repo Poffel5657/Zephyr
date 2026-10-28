@@ -104,5 +104,5 @@ export function createHpBars(player, enemies, camera) {
       const visible = placeOnScreen(bar, character.mesh.position, camera, BAR_LIFT);
       bar.classList.toggle(HIDDEN_CLASS, !visible);
     }
-  });
+  }, { whilePaused: true });
 }

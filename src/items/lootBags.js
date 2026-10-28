@@ -67,7 +67,11 @@ export function setupLoot(player, scene, clickables) {
     });
   };
 
-  on("enemyDefeated", ({ enemy }) => {
+  // Ins Nichts gefallen (Reel In): Das Loot ist mit weg
+  on("enemyDefeated", ({ enemy, fell }) => {
+    if (fell) {
+      return;
+    }
     fightLoot.push({ loot: rollLoot(enemy, player), x: enemy.x, z: enemy.z });
   });
 

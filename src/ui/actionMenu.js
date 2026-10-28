@@ -4,7 +4,8 @@ import "./ui.css";
 import "./actionMenu.css";
 import { on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
-import { useTechnique } from "../combat/combat.js";
+import { useTechnique, getCombatState } from "../combat/combat.js";
+import { getReelInBlock } from "../combat/reelIn.js";
 import { getTechniques, getCooldown } from "../combat/techniques.js";
 import { placeOnScreen } from "./screenPosition.js";
 
@@ -32,17 +33,31 @@ export function createActionMenu(player, camera) {
     useTechnique(technique.id, enemy);
   };
 
-  // Knöpfe neu bauen: "1 Attack", "2 Cleave (2)" (gesperrt = ausgegraut), dazu "Cancel"
+  // Warum die Technik gerade nicht geht (null = geht): Abklingzeit, Aktion schon verbraucht, Reel In nicht möglich
+  const getBlock = (technique, enemy) => {
+    if (getCooldown(player, technique.id) > 0) {
+      return "Cooling down";
+    }
+    if (getCombatState()?.actionUsed && !technique.free) {
+      return "You already acted this turn";
+    }
+    return technique.effect === "pull" ? getReelInBlock(player, enemy, technique) : null;
+  };
+
+  // Knöpfe neu bauen: "1 Attack", "2 Cleave (2)" (gesperrt = ausgegraut, Grund als Tooltip), dazu "Cancel"
   const open = (enemy) => {
     target = enemy;
-    techniques = getTechniques(player);
+    // Passive Techniken (Quick Snack) wirken von selbst und stehen nicht im Menü
+    techniques = getTechniques(player).filter((technique) => !technique.passive);
     menu.replaceChildren();
     techniques.forEach((technique, index) => {
       const cooldown = getCooldown(player, technique.id);
+      const block = getBlock(technique, enemy);
       const button = document.createElement("button");
       button.className = "action-menu-button";
       button.textContent = `${index + 1} ${technique.name}` + (cooldown > 0 ? ` (${cooldown})` : "");
-      button.disabled = cooldown > 0;
+      button.disabled = block !== null;
+      button.title = block ?? "";
       button.addEventListener("click", () => choose(technique));
       menu.appendChild(button);
     });
@@ -74,10 +89,10 @@ export function createActionMenu(player, camera) {
       return;
     }
     const technique = techniques[Number(match[1]) - 1];
-    if (technique !== undefined && getCooldown(player, technique.id) === 0) {
+    if (technique !== undefined && getBlock(technique, target) === null) {
       choose(technique);
     }
   });
 
-  addUpdate(updatePosition);
+  addUpdate(updatePosition, { whilePaused: true });
 }

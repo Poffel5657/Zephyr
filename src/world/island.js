@@ -1,12 +1,13 @@
 // Baut die Insel aus der geladenen Map: eine Säule pro Feld, plus Objekte obendrauf.
 import * as THREE from "three";
 import { getTile, getGridSize, gridToWorld, STEP_HEIGHT } from "./grid.js";
-import { buildObject, setTreeFelled, setChestOpen } from "./objects.js";
+import { buildObject, setTreeFelled, setChestOpen, setFishingSpotDepleted } from "./objects.js";
 import { on } from "../core/eventBus.js";
 import TILE_TYPES from "../data/tileTypes.json";
 
 // Fügt Säulen und Objekte zur Szene hinzu und gibt die Liste aller anklickbaren Teile zurück.
-// Gefällte Bäume werden per "treeFelled" / "treeGrown" zum Stumpf und wieder zum Baum, Truhen per "chestOpened" auf.
+// Gefällte Bäume werden per "treeFelled" / "treeGrown" zum Stumpf und wieder zum Baum, Truhen per "chestOpened" auf,
+// Angelstellen verlieren per "fishingSpotDepleted" Ring und Schwimmer und bekommen sie per "fishingSpotRestored" zurück.
 export function buildIsland(scene) {
   const grid = getGridSize();
   const clickables = [];
@@ -43,6 +44,8 @@ export function buildIsland(scene) {
 
   on("treeFelled", ({ x, z }) => setTreeFelled(objectsByTile.get(x + "," + z), true));
   on("treeGrown", ({ x, z }) => setTreeFelled(objectsByTile.get(x + "," + z), false));
+  on("fishingSpotDepleted", ({ x, z }) => setFishingSpotDepleted(objectsByTile.get(x + "," + z), true));
+  on("fishingSpotRestored", ({ x, z }) => setFishingSpotDepleted(objectsByTile.get(x + "," + z), false));
   on("chestOpened", ({ x, z }) => {
     // Ein alter Spielstand kann eine Truhe kennen, die auf der Karte nicht mehr steht
     const chest = objectsByTile.get(x + "," + z);

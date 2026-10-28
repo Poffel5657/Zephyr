@@ -1,7 +1,8 @@
 // Macht aus Mausklicks und Mausbewegungen Feld-Events ("tileClicked", "tileHovered").
-// Gegner: Linksklick = "enemyClicked" (auswählen), Rechtsklick = "attackIntent".
+// Gegner: Linksklick = "enemyClicked" (auswählen), Rechtsklick = "attackIntent". In der Pause zählen Klicks nicht.
 import * as THREE from "three";
 import { emit } from "./eventBus.js";
+import { isPaused } from "./loop.js";
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -50,6 +51,11 @@ function onPointerDown(event) {
 
 // Beim Loslassen ohne Bewegung (also kein Kamera-Drehen): Links = Feld oder Gegner anklicken, Rechts = angreifen.
 function onPointerUp(event) {
+  if (isPaused()) {
+    pressPosition = null;
+    rightPressPosition = null;
+    return;
+  }
   if (event.button === RIGHT_BUTTON && rightPressPosition !== null) {
     const moved = Math.hypot(event.clientX - rightPressPosition.x, event.clientY - rightPressPosition.y);
     rightPressPosition = null;
