@@ -18,6 +18,35 @@
         }
       }
     },
+    "mining": {
+      "name": "Mining",
+      "rocks": {
+        "copper_rock": {
+          "ore": "copper_ore",
+          "xp": 25,
+          "ores": 3,
+          "respawnSeconds": 20,
+          "cracks": 5,
+          "crackSeconds": 0.9,
+          "crackPerLevel": 0.01,
+          "maxCrackSeconds": 1.5,
+          "crackSize": 0.16,
+          "maxMistakes": 2
+        },
+        "stone_rock": {
+          "ore": "stone",
+          "xp": 15,
+          "ores": 3,
+          "respawnSeconds": 20,
+          "cracks": 5,
+          "crackSeconds": 0.9,
+          "crackPerLevel": 0.01,
+          "maxCrackSeconds": 1.5,
+          "crackSize": 0.16,
+          "maxMistakes": 2
+        }
+      }
+    },
     "fishing": {
       "name": "Fishing",
       "spots": {
@@ -65,6 +94,60 @@
           "maxTotalSeconds": 6,
           "fastSeconds": 2.4,
           "maxMistakes": 1
+        }
+      }
+    },
+    "smithing": {
+      "name": "Smithing",
+      "stations": ["anvil"],
+      "recipes": {
+        "copper_sword": {
+          "ingredients": [{ "item": "copper_ore", "amount": 3 }],
+          "result": "copper_sword",
+          "xp": 40,
+          "goodBonusXp": 20,
+          "failXp": 10,
+          "hits": 6,
+          "heatSeconds": 3,
+          "heatPerLevel": 0.03,
+          "maxHeatSeconds": 5,
+          "coldHeat": 0.25,
+          "reheatSeconds": 1.5,
+          "maxMistakes": 2
+        },
+        "copper_armor": {
+          "ingredients": [{ "item": "copper_ore", "amount": 4 }, { "item": "crab_shell", "amount": 2 }],
+          "result": "copper_armor",
+          "xp": 50,
+          "goodBonusXp": 25,
+          "failXp": 10,
+          "hits": 8,
+          "heatSeconds": 3,
+          "heatPerLevel": 0.03,
+          "maxHeatSeconds": 5,
+          "coldHeat": 0.25,
+          "reheatSeconds": 1.5,
+          "maxMistakes": 2
+        },
+        "copper_pickaxe": {
+          "ingredients": [{ "item": "copper_ore", "amount": 2 }, { "item": "oak_log", "amount": 1 }],
+          "result": "copper_pickaxe",
+          "xp": 30,
+          "goodBonusXp": 15,
+          "failXp": 10,
+          "hits": 5,
+          "heatSeconds": 3,
+          "heatPerLevel": 0.03,
+          "maxHeatSeconds": 5,
+          "coldHeat": 0.25,
+          "reheatSeconds": 1.5,
+          "maxMistakes": 2
+        },
+        "whetstone": {
+          "ingredients": [{ "item": "stone", "amount": 2 }],
+          "result": "whetstone",
+          "xp": 5,
+          "simple": true
         }
       }
     },

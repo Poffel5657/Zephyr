@@ -1,10 +1,11 @@
-// Inventar-Reiter im Seitenpanel: 30 Slots wie in OSRS, Gold, Auswahl, Drag & Drop, Eat und Drop.
+// Inventar-Reiter im Seitenpanel: 30 Slots wie in OSRS, Gold, Auswahl, Drag & Drop, Eat, Equip und Drop.
 import "./ui.css";
 import "./inventoryPanel.css";
 import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { SLOT_COUNT, getSlots, clearSlot, moveSlot } from "../inventory/inventory.js";
 import { isFood } from "../items/food.js";
+import { getEquipSlot } from "../character/equipment.js";
 
 const SELECTED_CLASS = "inventory-selected";
 const DRAG_ORIGIN_CLASS = "inventory-drag-origin";
@@ -39,6 +40,11 @@ export function createInventoryPanel(inventory) {
   eatButton.className = "inventory-drop inventory-eat";
   eatButton.textContent = "Eat";
   info.appendChild(eatButton);
+  // Anlegen-Knopf, nur sichtbar bei Waffe oder Rüstung
+  const equipButton = document.createElement("button");
+  equipButton.className = "inventory-drop inventory-eat";
+  equipButton.textContent = "Equip";
+  info.appendChild(equipButton);
   const dropButton = document.createElement("button");
   dropButton.className = "inventory-drop";
   dropButton.textContent = "Drop";
@@ -60,6 +66,7 @@ export function createInventoryPanel(inventory) {
     dropButton.disabled = selectedIndex === null;
     const selected = selectedIndex === null ? null : getSlots(inventory)[selectedIndex];
     eatButton.hidden = selected === null || !isFood(selected.item);
+    equipButton.hidden = selected === null || getEquipSlot(selected.item) === null;
     showName(selectedIndex);
   };
 
@@ -122,6 +129,12 @@ export function createInventoryPanel(inventory) {
   eatButton.addEventListener("click", () => {
     if (selectedIndex !== null) {
       emit("eatRequested", { inventory, slotIndex: selectedIndex });
+    }
+  });
+
+  equipButton.addEventListener("click", () => {
+    if (selectedIndex !== null) {
+      emit("equipRequested", { inventory, slotIndex: selectedIndex });
     }
   });
 

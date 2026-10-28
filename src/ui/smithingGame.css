@@ -1,0 +1,136 @@
+/* Schmiede-Mini-Spiel: Hitze-Leiste, glühende Klinge mit Markierung (unten Mitte, über dem Spiel). */
+.smithing-game {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  max-width: 80vw;
+  box-sizing: border-box;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  user-select: none;
+  z-index: 50;
+}
+
+.smithing-hidden {
+  display: none;
+}
+
+.smithing-status {
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Hitze: voll = orange-gelb, zu kalt = blau */
+.smithing-heat {
+  height: 6px;
+  background-color: var(--ui-bg-dark);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+}
+
+.smithing-heat-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6a00, var(--ui-gold));
+}
+
+.smithing-cold .smithing-heat-fill {
+  background: var(--ui-zep);
+}
+
+/* Die Klinge: glüht, solange sie heiß ist */
+.smithing-blade {
+  position: relative;
+  height: 34px;
+  margin: 4px 8px;
+  background: linear-gradient(180deg, #ffb347, #ff6a00);
+  border-radius: 4px 18px 18px 4px;
+  box-shadow: 0 0 10px rgba(255, 106, 0, 0.7);
+  cursor: crosshair;
+}
+
+.smithing-cold .smithing-blade {
+  background: linear-gradient(180deg, #9aa3ad, #5d6269);
+  box-shadow: none;
+}
+
+.smithing-heating .smithing-blade {
+  opacity: 0.5;
+}
+
+/* Die Stelle, auf die man schlagen soll */
+.smithing-mark {
+  position: absolute;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.smithing-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.smithing-counter {
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.smithing-button {
+  padding: 4px 8px;
+  background-color: var(--slot-bg);
+  color: var(--ui-text);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.smithing-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Fehler: kurz rot wackeln */
+.smithing-shake {
+  border-color: var(--ui-hp);
+  animation: smithing-shake 0.2s;
+}
+
+@keyframes smithing-shake {
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: -4px; }
+  75% { margin-left: 4px; }
+}
+
+.smithing-good {
+  border-color: var(--ui-gold);
+  box-shadow: 0 0 10px rgba(255, 216, 74, 0.8);
+}
+
+.smithing-done {
+  border-color: var(--ui-good);
+  box-shadow: 0 0 10px rgba(95, 214, 138, 0.8);
+}
+
+.smithing-ruined {
+  border-color: var(--ui-hp);
+  box-shadow: 0 0 10px rgba(224, 90, 90, 0.8);
+}

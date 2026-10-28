@@ -1,0 +1,87 @@
+/* Bergbau-Mini-Spiel: Felswand mit aufleuchtenden Rissen (unten Mitte, über dem Spiel). */
+.mining-game {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  max-width: 80vw;
+  box-sizing: border-box;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  user-select: none;
+  z-index: 50;
+}
+
+.mining-hidden {
+  display: none;
+}
+
+.mining-status {
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Die Felswand: quadratisch, grau mit etwas Struktur */
+.mining-wall {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.4;
+  background:
+    radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.08) 0 12%, transparent 13%),
+    radial-gradient(circle at 70% 65%, rgba(0, 0, 0, 0.18) 0 15%, transparent 16%),
+    linear-gradient(135deg, #8a9097, #5d6269);
+  border-radius: var(--ui-radius);
+  cursor: crosshair;
+  overflow: hidden;
+}
+
+/* Ein leuchtender Riss: heller Kern, gelber Schein */
+.mining-crack {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff6c8 0 25%, var(--ui-gold) 45%, rgba(255, 216, 74, 0) 70%);
+  animation: mining-glow 0.3s alternate infinite;
+  cursor: pointer;
+}
+
+@keyframes mining-glow {
+  from { opacity: 0.75; }
+  to { opacity: 1; }
+}
+
+.mining-counter {
+  font-size: 12px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+/* Fehler: kurz rot wackeln */
+.mining-shake {
+  border-color: var(--ui-hp);
+  animation: mining-shake 0.2s;
+}
+
+@keyframes mining-shake {
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: -4px; }
+  75% { margin-left: 4px; }
+}
+
+.mining-success {
+  border-color: var(--ui-good);
+  box-shadow: 0 0 10px rgba(95, 214, 138, 0.8);
+}
+
+.mining-fail {
+  border-color: var(--ui-hp);
+  box-shadow: 0 0 10px rgba(224, 90, 90, 0.8);
+}

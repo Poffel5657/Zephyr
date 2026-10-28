@@ -1,11 +1,13 @@
 // Speichert den Spielstand im Browser (localStorage) und lädt ihn beim Start wieder.
 // Zwei Spielstände: der Autosave (überschreibt sich ständig) und der eigene Save (nur über "Save" im Menü).
-// Gespeichert werden nur Daten (keine three.js-Objekte): Spieler, gefällte Bäume und erschöpfte Angelstellen.
+// Gespeichert werden nur Daten (keine three.js-Objekte): Spieler, gefällte Bäume, erschöpfte Angelstellen und Felsen.
+import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { gridToWorld, isWalkable } from "../world/grid.js";
 import { getSlots, setSlots } from "../inventory/inventory.js";
 import { getFelledTrees, setFelledTrees } from "../skills/woodcutting.js";
 import { getDepletedSpots, setDepletedSpots } from "../skills/fishing.js";
+import { getDepletedRocks, setDepletedRocks } from "../skills/mining.js";
 import { getMaxHp } from "../character/character.js";
 import { showMessage } from "../ui/messages.js";
 
@@ -15,8 +17,9 @@ const MANUAL_KEY = "zephyr-save-manual";
 const BROKEN_KEY = "zephyr-save-broken";
 // Bei neuen Daten in späteren Phasen hochzählen und in applySaveData alte Stände auffüllen
 // Version 2: aktuelle HP (Phase 8), Version 3: Gold und verteilte Punkte (Phase 10),
-// Version 4: Fortschritt (geöffnete Truhen, Einmal-Loot) (Phase 11), Version 5: erschöpfte Angelstellen (Phase 14)
-const SAVE_VERSION = 5;
+// Version 4: Fortschritt (geöffnete Truhen, Einmal-Loot) (Phase 11), Version 5: erschöpfte Angelstellen (Phase 14),
+// Version 6: Ausrüstung und abgebaute Felsen (Phase 15)
+const SAVE_VERSION = 6;
 // Umbenannte Items: alter Name → neuer Name (Phase 14: aus "fish" wurde "raw_fish")
 const RENAMED_ITEMS = { fish: "raw_fish" };
 
@@ -49,10 +52,12 @@ function createSaveData(player) {
       gold: player.inventory.gold,
       spentPoints: { ...player.spentPoints },
       progress: structuredClone(player.progress),
+      equipment: { ...player.equipment },
     },
     world: {
       felledTrees: getFelledTrees(),
       depletedSpots: getDepletedSpots(),
+      depletedRocks: getDepletedRocks(),
     },
   };
 }
@@ -179,7 +184,7 @@ export function setupAutoSave(player) {
     }
   };
 
-  for (const eventName of ["inventoryChanged", "skillsChanged", "statsChanged", "hpChanged", "progressChanged"]) {
+  for (const eventName of ["inventoryChanged", "skillsChanged", "statsChanged", "hpChanged", "progressChanged", "equipmentChanged"]) {
     on(eventName, saveSoon);
   }
 
@@ -291,6 +296,13 @@ function applySaveData(player, data) {
   if (Number.isInteger(saved.unspentPoints) && saved.unspentPoints >= 0) {
     player.unspentPoints = saved.unspentPoints;
   }
+  // Ausrüstung: nur Items, die es noch gibt und die auf diesen Platz gehören (vor den HP, die Rüstung zählt mit)
+  for (const slot of Object.keys(player.equipment)) {
+    const itemId = saved.equipment?.[slot];
+    player.equipment[slot] = typeof itemId === "string" && ITEMS[itemId]?.slot === slot ? itemId : null;
+  }
+  emit("equipmentChanged", { character: player });
+
   // Ältere Stände ohne HP starten mit vollen HP
   const maxHp = getMaxHp(player);
   player.hp = Number.isInteger(saved.hp) && saved.hp >= 1 ? Math.min(saved.hp, maxHp) : maxHp;
@@ -312,6 +324,9 @@ function applySaveData(player, data) {
   }
   if (Array.isArray(data.world?.depletedSpots)) {
     setDepletedSpots(data.world.depletedSpots);
+  }
+  if (Array.isArray(data.world?.depletedRocks)) {
+    setDepletedRocks(data.world.depletedRocks);
   }
 }
 

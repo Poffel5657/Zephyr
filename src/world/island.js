@@ -1,13 +1,15 @@
 // Baut die Insel aus der geladenen Map: eine Säule pro Feld, plus Objekte obendrauf.
 import * as THREE from "three";
 import { getTile, getGridSize, gridToWorld, STEP_HEIGHT } from "./grid.js";
-import { buildObject, setTreeFelled, setChestOpen, setFishingSpotDepleted } from "./objects.js";
+import { buildObject, setTreeFelled, setChestOpen, setFishingSpotDepleted, setMiningRockDepleted } from "./objects.js";
 import { on } from "../core/eventBus.js";
 import TILE_TYPES from "../data/tileTypes.json";
 
 // Fügt Säulen und Objekte zur Szene hinzu und gibt die Liste aller anklickbaren Teile zurück.
 // Gefällte Bäume werden per "treeFelled" / "treeGrown" zum Stumpf und wieder zum Baum, Truhen per "chestOpened" auf,
-// Angelstellen verlieren per "fishingSpotDepleted" Ring und Schwimmer und bekommen sie per "fishingSpotRestored" zurück.
+// Angelstellen verlieren per "fishingSpotDepleted" Ring und Schwimmer und bekommen sie per "fishingSpotRestored" zurück,
+// Felsen werden per "rockDepleted" zu Geröll und per "rockRestored" wieder zum Fels,
+// geworfene Felsbrocken verschwinden per "boulderThrown" und kommen per "boulderRestored" zurück.
 export function buildIsland(scene) {
   const grid = getGridSize();
   const clickables = [];
@@ -46,6 +48,10 @@ export function buildIsland(scene) {
   on("treeGrown", ({ x, z }) => setTreeFelled(objectsByTile.get(x + "," + z), false));
   on("fishingSpotDepleted", ({ x, z }) => setFishingSpotDepleted(objectsByTile.get(x + "," + z), true));
   on("fishingSpotRestored", ({ x, z }) => setFishingSpotDepleted(objectsByTile.get(x + "," + z), false));
+  on("rockDepleted", ({ x, z }) => setMiningRockDepleted(objectsByTile.get(x + "," + z), true));
+  on("rockRestored", ({ x, z }) => setMiningRockDepleted(objectsByTile.get(x + "," + z), false));
+  on("boulderThrown", ({ x, z }) => (objectsByTile.get(x + "," + z).visible = false));
+  on("boulderRestored", ({ x, z }) => (objectsByTile.get(x + "," + z).visible = true));
   on("chestOpened", ({ x, z }) => {
     // Ein alter Spielstand kann eine Truhe kennen, die auf der Karte nicht mehr steht
     const chest = objectsByTile.get(x + "," + z);

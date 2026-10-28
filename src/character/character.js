@@ -1,7 +1,9 @@
 // Verwaltet Grundwerte und Charakter-Level: Skill-Level-Ups zählen, Punkte vergeben und verteilen.
 // Dazu die Kampfwerte (Schaden, Ausweichen, Felder pro Zug) und die aktuellen HP.
 // Startwerte und Regeln stehen in characters.json. Die Formeln gelten auch für Gegner (gleiche Felder: stats, level, hp).
+// Ausrüstung (Waffe, Rüstung) gibt Boni aus items.json dazu, Gegner haben keine.
 import CHARACTER_DATA from "../data/characters.json";
+import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 
 const COMBAT = CHARACTER_DATA.combat;
@@ -17,6 +19,8 @@ export function createCharacterStats(characterId) {
     unspentPoints: 0,
     // Wie viele Punkte auf jeden Wert verteilt wurden (für das Zurücksetzen mit der Wind-Essenz)
     spentPoints: { str: 0, vit: 0, zep: 0, agi: 0 },
+    // Angelegte Items pro Platz (null = leer)
+    equipment: { weapon: null, armor: null },
   };
   character.hp = getMaxHp(character);
   return character;
@@ -28,9 +32,18 @@ function getLevelMultiplier(character) {
   return 1 + (character.level - 1) * CHARACTER_DATA.levelFactor;
 }
 
-// Max-Lebenspunkte = VIT × Level-Faktor (abgerundet).
+// Summe eines Bonus (z. B. "damage", "maxHp") über alle angelegten Items.
+export function getEquipmentBonus(character, bonus) {
+  let total = 0;
+  for (const itemId of Object.values(character.equipment ?? {})) {
+    total += itemId === null ? 0 : (ITEMS[itemId][bonus] ?? 0);
+  }
+  return total;
+}
+
+// Max-Lebenspunkte = VIT × Level-Faktor (abgerundet) + Rüstung.
 export function getMaxHp(character) {
-  return Math.floor(character.stats.vit * getLevelMultiplier(character));
+  return Math.floor(character.stats.vit * getLevelMultiplier(character)) + getEquipmentBonus(character, "maxHp");
 }
 
 // Max-ZEP = ZEP × Level-Faktor (abgerundet).
@@ -38,10 +51,10 @@ export function getMaxZep(character) {
   return Math.floor(character.stats.zep * getLevelMultiplier(character));
 }
 
-// Schaden eines Angriffs: STR × damageFactor × Level-Faktor, ±damageSpread, gerundet, mindestens 1.
+// Schaden eines Angriffs: STR × damageFactor × Level-Faktor + Waffe, ±damageSpread, gerundet, mindestens 1.
 // random kann man zum Testen festlegen (0 = kleinster, 1 = größter Schaden).
 export function getDamage(attacker, random = Math.random()) {
-  const base = attacker.stats.str * COMBAT.damageFactor * getLevelMultiplier(attacker);
+  const base = attacker.stats.str * COMBAT.damageFactor * getLevelMultiplier(attacker) + getEquipmentBonus(attacker, "damage");
   const spread = 1 + COMBAT.damageSpread * (random * 2 - 1);
   return Math.max(1, Math.round(base * spread));
 }
@@ -73,11 +86,15 @@ export function heal(character, amount) {
   return Math.max(0, healed);
 }
 
-// Wächst Max-HP (Level oder VIT), steigen die HP um denselben Betrag: Es fehlt danach genauso viel wie vorher.
-function addMaxHpGrowth(character, oldMaxHp) {
+// Wächst Max-HP (Level, VIT oder Rüstung), steigen die HP um denselben Betrag: Es fehlt danach genauso viel wie vorher.
+// Sinkt Max-HP (Rüstung abgelegt), werden die HP höchstens Max-HP.
+export function addMaxHpGrowth(character, oldMaxHp) {
   const growth = getMaxHp(character) - oldMaxHp;
   if (growth > 0) {
     character.hp += growth;
+    emit("hpChanged", { character });
+  } else if (character.hp > getMaxHp(character)) {
+    character.hp = getMaxHp(character);
     emit("hpChanged", { character });
   }
 }

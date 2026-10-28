@@ -137,6 +137,10 @@ export function createCombatHud() {
       if (data.actionUsed) {
         parts.push("Action used");
       }
+      // Laufende Buffs mit restlichen Zügen, z. B. "Sharpen (2)"
+      for (const [techniqueId, buff] of Object.entries(data.current?.buffs ?? {})) {
+        parts.push(`${TECHNIQUES[techniqueId].name} (${buff.turnsLeft})`);
+      }
       turnStatus.textContent = parts.join(" · ");
     } else {
       turnStatus.textContent = "";

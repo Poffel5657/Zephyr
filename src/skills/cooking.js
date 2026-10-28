@@ -6,12 +6,16 @@ import ITEMS from "../data/items.json";
 import { emit, on } from "../core/eventBus.js";
 import { getLevel } from "./skills.js";
 import { addItem, canAddItem, hasItem, removeItem } from "../inventory/inventory.js";
-import { openCookingWindow, updateCookingWindow, closeCookingWindow, isCookingWindowOpen } from "../ui/cookingWindow.js";
+import { openCraftingWindow, updateCraftingWindow, closeCraftingWindow, isCraftingWindowOpen } from "../ui/craftingWindow.js";
 import { startCookingGame, stopCookingGame } from "../ui/cookingGame.js";
 import { showMessage } from "../ui/messages.js";
 import { logMessage } from "../ui/chatLog.js";
 
 const COOKING = SKILL_DATA.skills.cooking;
+
+// So heißt das Herstellungs-Fenster am Lagerfeuer
+const WINDOW = { title: "Campfire", actionLabel: "Cook" };
+const OWNER = "cooking";
 
 // Welches Item kommt bei welchem Ergebnis heraus (Schlüssel im Rezept)
 const RESULT_ITEM = { done: "result", perfect: "perfect", burnt: "burnt" };
@@ -25,7 +29,7 @@ export function setupCooking(character) {
     if (data.character !== character || !COOKING.stations.includes(data.object)) {
       return;
     }
-    openCookingWindow(getRows(character), (recipeId) => startCooking(character, recipeId), () => {
+    openCraftingWindow(OWNER, WINDOW, getRows(character), (recipeId) => startCooking(character, recipeId), () => {
       stopCookingGame();
       currentRecipe = null;
     });
@@ -38,23 +42,23 @@ export function setupCooking(character) {
     const recipe = currentRecipe;
     currentRecipe = null;
     finishCooking(character, recipe, result);
-    updateCookingWindow(getRows(character));
+    updateCraftingWindow(OWNER, getRows(character));
   });
 
   // Ändert sich das Inventar (z. B. Fisch gegessen oder weggeworfen), Knöpfe im offenen Fenster anpassen
   on("inventoryChanged", ({ inventory }) => {
-    if (inventory === character.inventory && isCookingWindowOpen()) {
-      updateCookingWindow(getRows(character), currentRecipe !== null);
+    if (inventory === character.inventory && isCraftingWindowOpen(OWNER)) {
+      updateCraftingWindow(OWNER, getRows(character), currentRecipe !== null);
     }
   });
 
   // Weglaufen oder ein Kampf schließt das Fenster (und bricht laufendes Kochen ohne Ergebnis ab)
   on("actionCancelled", (data) => {
-    if (data.character === character && isCookingWindowOpen()) {
-      closeCookingWindow();
+    if (data.character === character && isCraftingWindowOpen(OWNER)) {
+      closeCraftingWindow();
     }
   });
-  on("combatStarted", () => closeCookingWindow());
+  on("combatStarted", () => closeCraftingWindow());
 }
 
 // Legt die Zutat aufs Feuer und startet das Mini-Spiel. Mit höherem Level hat man mehr Zeit für die Folge.
@@ -66,7 +70,7 @@ function startCooking(character, recipeId) {
   const level = getLevel(character.skills.cooking);
   const totalSeconds = Math.min(recipe.maxTotalSeconds, recipe.totalSeconds + recipe.secondsPerLevel * (level - 1));
   currentRecipe = recipe;
-  updateCookingWindow(getRows(character), true);
+  updateCraftingWindow(OWNER, getRows(character), true);
   startCookingGame({ steps: recipe.steps, totalSeconds: totalSeconds, fastSeconds: recipe.fastSeconds, maxMistakes: recipe.maxMistakes });
 }
 
@@ -102,6 +106,6 @@ function getRows(character) {
     name: ITEMS[recipe.result].name,
     needs: `Needs ${ITEMS[recipe.ingredient].name}`,
     color: ITEMS[recipe.result].color,
-    canCook: hasItem(character.inventory, recipe.ingredient),
+    canMake: hasItem(character.inventory, recipe.ingredient),
   }));
 }

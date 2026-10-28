@@ -1,23 +1,28 @@
-// Was der Spieler im eigenen Zug tun kann: laufen, angreifen (mit Rhythmus-Combo), springen, essen.
+// Was der Spieler im eigenen Zug tun kann: laufen, angreifen (mit Rhythmus-Combo), Techniken mit Sonder-Effekt
+// (Reel In, Rock Throw, Sharpen), springen, essen.
 // Pro Zug Bewegung bis moveLeft Felder und eine Aktion.
+import ITEMS from "../data/items.json";
 import { emit } from "../core/eventBus.js";
 import { setOccupied } from "../world/grid.js";
 import { findPath, findPathToObject } from "../world/pathfinding.js";
 import { getDodgeChance, takeDamage } from "../character/character.js";
 import { walkPath, jumpTo } from "../player/movement.js";
 import { showMessage } from "../ui/messages.js";
-import { startCooldown, getCooldown, hasTechnique, getTechnique, getTechniques } from "./techniques.js";
+import { hasItem, removeItem } from "../inventory/inventory.js";
+import { startCooldown, getCooldown, hasTechnique, getTechnique, getTechniques, startBuff, getDamageBuff } from "./techniques.js";
 import { startRhythm } from "./rhythm.js";
 import { state, isPlayerTurn, emitTurnUpdated, wait, faceTowards } from "./combatState.js";
 import { isAdjacent, isHigher, getScaledDamage } from "./combatRules.js";
 import { defeatEnemy } from "./combatEnd.js";
 import { reelIn, getReelInBlock } from "./reelIn.js";
+import { throwRock, getRockThrowBlock } from "./rockThrow.js";
 
 // Pause nach dem eigenen Angriff (sonst verschwindet ein besiegter Gegner ohne sichtbaren Treffer)
 const AFTER_ATTACK_TIME = 0.4;
 
 // Benutzt eine Technik auf einen Gegner (aus dem Aktions-Menü): daneben → sofort,
-// sonst erst hinlaufen, wenn die Felder in diesem Zug reichen. Reel In ("effect": "pull") wirkt aus der Entfernung.
+// sonst erst hinlaufen, wenn die Felder in diesem Zug reichen. Reel In ("pull") und Rock Throw ("throw") wirken aus der
+// Entfernung, Sharpen ("buff") wirkt auf den Spieler selbst.
 export function useTechnique(techniqueId, enemy) {
   const { combat, player } = state;
   if (!isPlayerTurn() || !enemy.alive || !combat.enemies.includes(enemy)) {
@@ -32,13 +37,19 @@ export function useTechnique(techniqueId, enemy) {
   if (!hasTechnique(player, techniqueId) || getCooldown(player, techniqueId) > 0) {
     return;
   }
-  if (technique.effect === "pull") {
-    const block = getReelInBlock(player, enemy, technique);
+  if (technique.effect !== undefined) {
+    const block = getTechniqueBlock(technique, enemy);
     if (block !== null) {
       showMessage(block);
       return;
     }
-    reelIn(enemy, technique);
+    if (technique.effect === "pull") {
+      reelIn(enemy, technique);
+    } else if (technique.effect === "throw") {
+      throwRock(enemy, technique);
+    } else if (technique.effect === "buff") {
+      useBuff(technique);
+    }
     return;
   }
   if (isAdjacent(player, enemy)) {
@@ -56,6 +67,41 @@ export function useTechnique(techniqueId, enemy) {
       playerCombo(enemy, techniqueId);
     }
   });
+}
+
+// Warum eine Technik mit Sonder-Effekt auf diesen Gegner gerade nicht geht (null = geht). Für das Aktions-Menü.
+// Abklingzeit und verbrauchte Aktion prüft das Menü selbst.
+export function getTechniqueBlock(technique, enemy) {
+  const { player } = state;
+  if (technique.effect === "pull") {
+    return getReelInBlock(player, enemy, technique);
+  }
+  if (technique.effect === "throw") {
+    return getRockThrowBlock(player, enemy, technique);
+  }
+  if (technique.needsWeapon && player.equipment?.weapon == null) {
+    return "You need a weapon";
+  }
+  if (technique.consumes !== undefined && !hasItem(player.inventory, technique.consumes)) {
+    return `You need a ${ITEMS[technique.consumes].name}`;
+  }
+  return null;
+}
+
+// Buff-Technik (Sharpen): verbraucht das Item, startet Buff und Abklingzeit. Kostet keine Aktion, wenn "free".
+function useBuff(technique) {
+  const { combat, player } = state;
+  if (technique.consumes !== undefined) {
+    removeItem(player.inventory, technique.consumes, 1);
+  }
+  if (!technique.free) {
+    combat.actionUsed = true;
+  }
+  startCooldown(player, technique.id);
+  startBuff(player, technique);
+  emit("xpGained", { character: player, skill: technique.skill, amount: technique.xp });
+  showMessage(`${technique.name}! +${Math.round(technique.damageBonus * 100)} % damage for ${technique.buffTurns} turns`, "combat");
+  emitTurnUpdated();
 }
 
 // Prüft, ob der Charakter gerade essen darf (null = ja, sonst der Grund als Meldung). Für setupFood.
@@ -168,7 +214,8 @@ async function playerCombo(enemy, techniqueId) {
   const hits = [];
   const highGround = isHigher(player, enemy);
   const hit = (factor, index) => {
-    const damage = getScaledDamage(player, enemy, factor);
+    // Buffs (Sharpen) machen jeden Schlag der Combo stärker
+    const damage = getScaledDamage(player, enemy, factor * getDamageBuff(player));
     takeDamage(enemy, damage);
     hits.push(damage);
     emit("attackResolved", { attacker: player, target: enemy, damage, dodged: false, technique: technique.id, hit: index, highGround });

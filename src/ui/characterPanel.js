@@ -1,12 +1,18 @@
-// Charakter-Reiter im Seitenpanel: Grundwerte, Level, HP/ZEP, Punkte verteilen (Entwurf + Confirm) und zurücksetzen.
+// Charakter-Reiter im Seitenpanel: Grundwerte, Level, HP/ZEP, Ausrüstung, Punkte verteilen (Entwurf + Confirm) und zurücksetzen.
 import "./ui.css";
 import "./characterPanel.css";
-import { on } from "../core/eventBus.js";
+import ITEMS from "../data/items.json";
+import { emit, on } from "../core/eventBus.js";
 import { getLevelProgress, getMaxHp, getMaxZep, spendPoints, resetStatPoints, getSpentPointsTotal } from "../character/character.js";
 import { hasItem, removeItem } from "../inventory/inventory.js";
 import { isInCombat } from "../combat/combat.js";
 
 const HIDDEN_CLASS = "character-hidden";
+// Ausrüstungs-Plätze: Anzeigename und welcher Bonus dabei steht
+const EQUIPMENT_SLOTS = [
+  { key: "weapon", label: "Weapon", bonus: "damage", unit: "damage" },
+  { key: "armor", label: "Armor", bonus: "maxHp", unit: "max HP" },
+];
 // Dieses Item kostet das Zurücksetzen aller Punkte
 const RESET_ITEM = "wind_essence";
 
@@ -53,6 +59,29 @@ export function createCharacterPanel(character) {
   const zep = document.createElement("div");
   zep.className = "character-zep";
   panel.appendChild(zep);
+
+  // Ausrüstung: pro Platz Name + Bonus und "Unequip"
+  const equipmentList = document.createElement("div");
+  equipmentList.className = "character-equipment";
+  panel.appendChild(equipmentList);
+  const equipmentElements = {};
+  for (const { key, label } of EQUIPMENT_SLOTS) {
+    const row = document.createElement("div");
+    row.className = "character-equipment-row";
+    const name = document.createElement("span");
+    name.className = "character-equipment-label";
+    name.textContent = label;
+    const item = document.createElement("span");
+    item.className = "character-equipment-item";
+    const unequip = document.createElement("button");
+    unequip.className = "character-stat-button character-unequip";
+    unequip.textContent = "×";
+    unequip.title = "Unequip";
+    unequip.addEventListener("click", () => emit("unequipRequested", { character, slot: key }));
+    row.append(name, item, unequip);
+    equipmentList.appendChild(row);
+    equipmentElements[key] = { item, unequip };
+  }
 
   const points = document.createElement("div");
   points.className = "character-points";
@@ -167,6 +196,7 @@ export function createCharacterPanel(character) {
     confirmBtn,
     resetBtn,
     stats: statElements,
+    equipment: equipmentElements,
   };
 
   // Reiter verlassen oder Panel eingeklappt: Entwurf verwerfen
@@ -220,6 +250,14 @@ function updateCharacter(character, elements, draft) {
   elements.hp.textContent = `HP: ${character.hp + maxHp - getMaxHp(character)} / ${maxHp}`;
   elements.zep.textContent = `Max ZEP: ${getMaxZep(tempCharacter)}`;
   elements.points.textContent = `Points: ${remainingPoints}`;
+
+  for (const { key, bonus, unit } of EQUIPMENT_SLOTS) {
+    const itemId = character.equipment[key];
+    const { item, unequip } = elements.equipment[key];
+    item.textContent = itemId === null ? "—" : `${ITEMS[itemId].name} (+${ITEMS[itemId][bonus] ?? 0} ${unit})`;
+    unequip.hidden = itemId === null;
+    unequip.disabled = isInCombat();
+  }
 
   for (const { key } of STATS) {
     const statEl = elements.stats[key];

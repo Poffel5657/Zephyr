@@ -171,13 +171,98 @@ function buildCampfire(scene, position) {
   return campfire;
 }
 
+// Baut einen Platzhalter-Fels zum Abbauen: grauer Fels mit farbigen Erz-Stückchen (oreColor).
+// Abgebaut bleibt nur flaches Geröll stehen.
+function buildMiningRock(scene, position, oreColor) {
+  const group = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color: "#7a8087" });
+  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.35), stone);
+  rock.position.y = 0.25;
+  rock.castShadow = true;
+  rock.receiveShadow = true;
+  group.add(rock);
+
+  const oreMaterial = new THREE.MeshStandardMaterial({ color: oreColor });
+  const specks = [];
+  for (let i = 0; i < 5; i++) {
+    const speck = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07), oreMaterial);
+    const angle = (i * 2 * Math.PI) / 5;
+    speck.position.set(Math.cos(angle) * 0.3, 0.25 + (i % 2) * 0.12, Math.sin(angle) * 0.3);
+    speck.castShadow = true;
+    group.add(speck);
+    specks.push(speck);
+  }
+
+  const rubble = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2), stone);
+  rubble.position.y = 0.08;
+  rubble.scale.y = 0.4;
+  rubble.receiveShadow = true;
+  rubble.visible = false;
+  group.add(rubble);
+  group.userData.active = [rock, ...specks];
+  group.userData.rubble = rubble;
+
+  group.position.copy(position);
+  scene.add(group);
+  return group;
+}
+
+// Zeigt beim Fels entweder Fels + Erz oder nur Geröll (abgebaut).
+export function setMiningRockDepleted(rock, depleted) {
+  for (const part of rock.userData.active) {
+    part.visible = !depleted;
+  }
+  rock.userData.rubble.visible = depleted;
+}
+
+// Baut einen Platzhalter-Amboss mit kleiner Esse daneben (glühende Kohlen).
+function buildAnvil(scene, position) {
+  const group = new THREE.Group();
+  const iron = new THREE.MeshStandardMaterial({ color: "#3c4148" });
+  const parts = [];
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.2), iron);
+  base.position.y = 0.1;
+  parts.push(base);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.12, 0.22), iron);
+  top.position.y = 0.26;
+  parts.push(top);
+  const horn = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.18), iron);
+  horn.rotation.z = -Math.PI / 2;
+  horn.position.set(0.31, 0.26, 0);
+  parts.push(horn);
+
+  const forge = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.25), new THREE.MeshStandardMaterial({ color: "#7a8087" }));
+  forge.position.set(-0.32, 0.15, 0);
+  parts.push(forge);
+  for (const part of parts) {
+    part.castShadow = true;
+    part.receiveShadow = true;
+    group.add(part);
+  }
+
+  const coals = new THREE.Mesh(
+    new THREE.BoxGeometry(0.18, 0.04, 0.18),
+    new THREE.MeshStandardMaterial({ color: "#ff7a2a", emissive: "#ff4a00", emissiveIntensity: 1 }),
+  );
+  coals.position.set(-0.32, 0.31, 0);
+  group.add(coals);
+
+  group.position.copy(position);
+  scene.add(group);
+  return group;
+}
+
 const OBJECT_BUILDERS = {
   tree: buildTree,
   rock: buildRock,
   chest: buildChest,
   fishing_chest: buildChest,
+  mining_chest: buildChest,
   fishing_spot: buildFishingSpot,
   campfire: buildCampfire,
+  copper_rock: (scene, position) => buildMiningRock(scene, position, "#d08850"),
+  stone_rock: (scene, position) => buildMiningRock(scene, position, "#c9c9c9"),
+  anvil: buildAnvil,
 };
 
 // Baut das Objekt mit diesem Namen und gibt es zurück (null + Warnung bei unbekanntem Namen).

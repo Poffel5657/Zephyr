@@ -24,11 +24,15 @@ const MAP_FILE = "maps/start-island.json";
 
 const OBJECTS = {
   tree: "Baum",
-  rock: "Fels",
+  rock: "Felsbrocken (Rock Throw)",
   chest: "Truhe",
   fishing_chest: "Angel-Truhe",
   fishing_spot: "Angelstelle",
   campfire: "Lagerfeuer",
+  mining_chest: "Bergbau-Truhe",
+  copper_rock: "Kupfer-Fels",
+  stone_rock: "Stein-Fels",
+  anvil: "Amboss",
 };
 // Objekte, die nur auf Wasser stehen (alle anderen nur an Land)
 const WATER_OBJECTS = ["fishing_spot"];
@@ -320,7 +324,7 @@ function drawTile(tile, x, z) {
       Math.PI * 2,
     );
     ctx.fill();
-  } else if (tile.object === "chest" || tile.object === "fishing_chest") {
+  } else if (tile.object === "chest" || tile.object === "fishing_chest" || tile.object === "mining_chest") {
     // Truhe: brauner Kasten mit hellerem Deckel und goldenem Schloss
     const w = cell * 0.56;
     const h = cell * 0.4;
@@ -345,6 +349,27 @@ function drawTile(tile, x, z) {
     ctx.lineTo(cx + s * 0.7, cz + s * 0.8);
     ctx.closePath();
     ctx.fill();
+  } else if (tile.object === "copper_rock" || tile.object === "stone_rock") {
+    // Abbau-Fels: grauer Kreis mit farbigen Erz-Punkten
+    const cx = px + cell / 2;
+    const cz = pz + cell / 2;
+    ctx.fillStyle = "#7a8087";
+    ctx.beginPath();
+    ctx.arc(cx, cz, cell * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = tile.object === "copper_rock" ? "#d08850" : "#d8d8d8";
+    for (const [dx, dz] of [[-0.12, -0.1], [0.12, -0.05], [0, 0.14]]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx * cell, cz + dz * cell, cell * 0.06, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (tile.object === "anvil") {
+    // Amboss: dunkler Block auf Fuß, daneben glühende Esse
+    ctx.fillStyle = "#3c4148";
+    ctx.fillRect(px + cell * 0.38, pz + cell * 0.35, cell * 0.5, cell * 0.14);
+    ctx.fillRect(px + cell * 0.52, pz + cell * 0.49, cell * 0.22, cell * 0.2);
+    ctx.fillStyle = "#ff7a2a";
+    ctx.fillRect(px + cell * 0.12, pz + cell * 0.4, cell * 0.2, cell * 0.2);
   } else if (tile.object === "fishing_spot") {
     // Angelstelle: heller Ring mit rotem Schwimmer
     ctx.strokeStyle = "#bfe6ff";

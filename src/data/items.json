@@ -16,6 +16,16 @@
     "color": "#d08850",
     "sprite": "sprites/items/copper_axe.png"
   },
+  "old_pickaxe": {
+    "name": "Old Pickaxe",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["tool"],
+    "skill": "mining",
+    "toolBonus": 0,
+    "color": "#8f8a80",
+    "sprite": "sprites/items/old_pickaxe.png"
+  },
   "copper_ore": {
     "name": "Copper Ore",
     "stackable": true,
@@ -24,6 +34,14 @@
     "color": "#8a6a5c",
     "sprite": "sprites/items/copper_ore.png"
   },
+  "stone": {
+    "name": "Stone",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["resource"],
+    "color": "#9a9a9a",
+    "sprite": "sprites/items/stone.png"
+  },
   "copper_pickaxe": {
     "name": "Copper Pickaxe",
     "stackable": false,
@@ -31,7 +49,36 @@
     "tags": ["tool", "equippable"],
     "skill": "mining",
     "color": "#e3a868",
-    "sprite": "sprites/items/copper_pickaxe.png"
+    "sprite": "sprites/items/copper_pickaxe.png",
+    "toolBonus": 0.3
+  },
+  "copper_sword": {
+    "name": "Copper Sword",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["weapon"],
+    "slot": "weapon",
+    "damage": 2,
+    "color": "#c97a42",
+    "sprite": "sprites/items/copper_sword.png"
+  },
+  "copper_armor": {
+    "name": "Copper Armor",
+    "stackable": false,
+    "maxStack": 1,
+    "tags": ["armor"],
+    "slot": "armor",
+    "maxHp": 5,
+    "color": "#b86b3c",
+    "sprite": "sprites/items/copper_armor.png"
+  },
+  "whetstone": {
+    "name": "Whetstone",
+    "stackable": true,
+    "maxStack": 3,
+    "tags": ["consumable"],
+    "color": "#6f7f8c",
+    "sprite": "sprites/items/whetstone.png"
   },
   "raw_fish": {
     "name": "Raw Fish",

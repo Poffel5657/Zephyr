@@ -4,7 +4,11 @@
 // Gegner-Formen, die enemies.js kennt
 const SHAPES = ["gust", "wisp", "crab"];
 // Objekte, die der Map-Editor setzen kann
-const OBJECTS = ["tree", "rock", "chest", "fishing_chest", "fishing_spot", "campfire"];
+const OBJECTS = ["tree", "rock", "chest", "fishing_chest", "fishing_spot", "campfire", "mining_chest", "copper_rock", "stone_rock", "anvil"];
+// Ausrüstungs-Plätze, die das Spiel kennt
+const EQUIP_SLOTS = ["weapon", "armor"];
+// Technik-Effekte, die der Code kennt (ohne = normaler Angriff)
+const EFFECTS = ["pull", "throw", "buff"];
 // Techniken, die der Code direkt benutzt (Quick Snack schaltet Essen im Kampf frei)
 const REQUIRED_TECHNIQUES = ["attack", "quick_snack"];
 // Items, die der Code direkt benutzt (Start-Axt, Reset-Kosten)
@@ -46,6 +50,11 @@ export function validateGameData(data) {
     check(isColor(item.color), `${where}: Farbe muss wie #a1b2c3 aussehen`);
     check(Array.isArray(item.tags), `${where}: "tags" muss eine Liste sein`);
     check(item.heal === undefined || (isNumber(item.heal) && item.heal > 0), `${where}: "heal" muss größer als 0 sein`);
+    check(item.slot === undefined || EQUIP_SLOTS.includes(item.slot), `${where}: Platz "${item.slot}" gibt es nicht (erlaubt: ${EQUIP_SLOTS.join(", ")})`);
+    check(item.slot === undefined || !item.stackable, `${where}: Ausrüstung darf nicht stapelbar sein`);
+    check(item.damage === undefined || (isNumber(item.damage) && item.damage >= 0), `${where}: "damage" muss 0 oder mehr sein`);
+    check(item.maxHp === undefined || (isInt(item.maxHp)), `${where}: "maxHp" muss eine ganze Zahl ab 0 sein`);
+    check(item.toolBonus === undefined || (isNumber(item.toolBonus) && item.toolBonus >= 0), `${where}: "toolBonus" muss 0 oder mehr sein`);
   }
   for (const id of REQUIRED_ITEMS) {
     check(items[id] !== undefined, `Item ${id} wird vom Spiel gebraucht und darf nicht fehlen`);
@@ -87,8 +96,11 @@ export function validateGameData(data) {
       check(isInt(technique.level, 1), `${where}: Level muss ab 1 sein`);
     }
     check(technique.cooldown === undefined || isInt(technique.cooldown), `${where}: Abklingzeit muss eine ganze Zahl sein`);
-    check(technique.effect === undefined || technique.effect === "pull", `${where}: Effekt "${technique.effect}" gibt es nicht (nur "pull")`);
+    check(technique.effect === undefined || EFFECTS.includes(technique.effect), `${where}: Effekt "${technique.effect}" gibt es nicht (erlaubt: ${EFFECTS.join(", ")})`);
     check(technique.effect !== "pull" || isInt(technique.range, 2), `${where}: Heranziehen braucht "range" ab 2`);
+    check(technique.effect !== "throw" || (isInt(technique.range, 2) && isNumber(technique.damage) && technique.damage > 0), `${where}: Werfen braucht "range" ab 2 und "damage" größer als 0`);
+    check(technique.effect !== "buff" || (isInt(technique.buffTurns, 1) && isNumber(technique.damageBonus) && technique.damageBonus > 0), `${where}: Buff braucht "buffTurns" ab 1 und "damageBonus" größer als 0`);
+    check(technique.consumes === undefined || items[technique.consumes] !== undefined, `${where}: verbrauchtes Item "${technique.consumes}" gibt es nicht`);
   }
 
   check(characters.characters?.hero !== undefined, `Charakter hero wird vom Spiel gebraucht`);
@@ -100,6 +112,15 @@ export function validateGameData(data) {
     for (const [treeId, tree] of Object.entries(skill.trees ?? {})) {
       check(items[tree.log] !== undefined, `Skill ${skillId}, Baum ${treeId}: Item "${tree.log}" gibt es nicht`);
     }
+    for (const [rockId, rock] of Object.entries(skill.rocks ?? {})) {
+      const where = `Skill ${skillId}, Fels ${rockId}`;
+      check(items[rock.ore] !== undefined, `${where}: Item "${rock.ore}" gibt es nicht`);
+      check(OBJECTS.includes(rockId), `${where}: Es gibt kein Karten-Objekt "${rockId}"`);
+      check(isInt(rock.ores, 1) && isInt(rock.cracks, 1), `${where}: "ores" und "cracks" müssen mindestens 1 sein`);
+      check(isNumber(rock.crackSeconds) && rock.crackSeconds > 0 && rock.crackSeconds <= rock.maxCrackSeconds, `${where}: "crackSeconds" muss größer als 0 und höchstens "maxCrackSeconds" sein`);
+      check(isNumber(rock.crackSize) && rock.crackSize > 0 && rock.crackSize < 0.5, `${where}: "crackSize" muss zwischen 0 und 0.5 liegen`);
+      check(isInt(rock.maxMistakes), `${where}: "maxMistakes" muss eine ganze Zahl sein`);
+    }
     for (const [spotId, spot] of Object.entries(skill.spots ?? {})) {
       check(items[spot.fish] !== undefined, `Skill ${skillId}, Angelstelle ${spotId}: Item "${spot.fish}" gibt es nicht`);
       check(isNumber(spot.waitMin) && isNumber(spot.waitMax) && spot.waitMin <= spot.waitMax, `Skill ${skillId}, Angelstelle ${spotId}: "waitMin" darf nicht größer als "waitMax" sein`);
@@ -110,6 +131,22 @@ export function validateGameData(data) {
       check(isNumber(spot.turnWarning) && spot.turnWarning < spot.turnMin, `Skill ${skillId}, Angelstelle ${spotId}: "turnWarning" muss kleiner als "turnMin" sein`);
     }
     for (const [recipeId, recipe] of Object.entries(skill.recipes ?? {})) {
+      const where = `Skill ${skillId}, Rezept ${recipeId}`;
+      check(items[recipe.result] !== undefined, `${where}: Item "${recipe.result}" (result) gibt es nicht`);
+      if (recipe.ingredients !== undefined) {
+        // Schmieden: Liste von Zutaten, Mini-Spiel „Heiß hämmern“ (außer "simple")
+        check(Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0, `${where}: braucht mindestens eine Zutat`);
+        for (const entry of Array.isArray(recipe.ingredients) ? recipe.ingredients : []) {
+          check(items[entry.item] !== undefined && isInt(entry.amount, 1), `${where}: Zutat "${entry.item}" gibt es nicht oder Menge ungültig`);
+        }
+        if (!recipe.simple) {
+          check(isInt(recipe.hits, 1), `${where}: "hits" muss mindestens 1 sein`);
+          check(isNumber(recipe.heatSeconds) && recipe.heatSeconds > 0 && isNumber(recipe.reheatSeconds) && recipe.reheatSeconds > 0, `${where}: "heatSeconds" und "reheatSeconds" müssen größer als 0 sein`);
+          check(isNumber(recipe.coldHeat) && recipe.coldHeat >= 0 && recipe.coldHeat < 1, `${where}: "coldHeat" muss zwischen 0 und 1 liegen`);
+          check(isInt(recipe.maxMistakes), `${where}: "maxMistakes" muss eine ganze Zahl sein`);
+        }
+        continue;
+      }
       for (const key of ["ingredient", "result", "perfect", "burnt"]) {
         check(items[recipe[key]] !== undefined, `Skill ${skillId}, Rezept ${recipeId}: Item "${recipe[key]}" (${key}) gibt es nicht`);
       }

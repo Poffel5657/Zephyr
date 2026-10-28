@@ -136,3 +136,33 @@
 .character-reset-ask.character-hidden {
   display: none;
 }
+
+/* Ausrüstung: Platz, Item mit Bonus, Ablegen-Knopf */
+.character-equipment {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+  padding: 6px 0;
+  border-top: 1px solid var(--ui-border-color);
+  border-bottom: 1px solid var(--ui-border-color);
+}
+
+.character-equipment-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+.character-equipment-label {
+  width: 52px;
+  font-weight: bold;
+}
+
+.character-equipment-item {
+  flex: 1;
+  color: var(--ui-muted);
+}

@@ -1,5 +1,6 @@
 // Kampf-Techniken: Welt-Skills schalten sie bei festen Leveln frei (z. B. Woodcutting Lv 5 → Cleave).
 // Jede Technik hat ein Rhythmus-Muster und kann eine Abklingzeit in Runden haben. Werte in techniques.json.
+// Buffs (Sharpen) halten ein paar eigene Züge und enden mit dem Kampf.
 import TECHNIQUES from "../data/techniques.json";
 import { emit, on } from "../core/eventBus.js";
 import { getLevel } from "../skills/skills.js";
@@ -61,10 +62,48 @@ export function tickCooldowns(character) {
   }
 }
 
-// Setzt alle Abklingzeiten zurück (nach dem Kampf).
+// Startet den Buff einer Technik: gilt in diesem Zug und den nächsten (buffTurns − 1) eigenen Zügen.
+export function startBuff(character, technique) {
+  character.buffs ??= {};
+  character.buffs[technique.id] = { damageBonus: technique.damageBonus, turnsLeft: technique.buffTurns };
+  emit("buffsChanged", { character });
+}
+
+// Faktor für den eigenen Schaden aus allen Buffs (1 = kein Buff, 1.5 = +50 %).
+export function getDamageBuff(character) {
+  let factor = 1;
+  for (const buff of Object.values(character.buffs ?? {})) {
+    factor += buff.damageBonus;
+  }
+  return factor;
+}
+
+// Wie viele eigene Züge der Buff noch hält (0 = keiner).
+export function getBuffTurns(character, techniqueId) {
+  return character.buffs?.[techniqueId]?.turnsLeft ?? 0;
+}
+
+// Zählt am Anfang jedes eigenen Zuges alle Buffs um 1 herunter, abgelaufene fallen weg.
+export function tickBuffs(character) {
+  const buffs = character.buffs ?? {};
+  if (Object.keys(buffs).length === 0) {
+    return;
+  }
+  for (const [techniqueId, buff] of Object.entries(buffs)) {
+    buff.turnsLeft -= 1;
+    if (buff.turnsLeft <= 0) {
+      delete buffs[techniqueId];
+    }
+  }
+  emit("buffsChanged", { character });
+}
+
+// Setzt alle Abklingzeiten und Buffs zurück (nach dem Kampf).
 function resetCooldowns(character) {
   character.cooldowns = {};
   character.freshCooldowns = new Set();
+  character.buffs = {};
+  emit("buffsChanged", { character });
 }
 
 // Meldet "New technique: …", wenn ein Skill-Level-Up eine Technik freischaltet.

@@ -7,5 +7,9 @@
   "fishing_chest": {
     "name": "Fisher's Chest",
     "contents": { "gold": 0, "items": [{ "item": "old_fishing_pole", "amount": 1 }] }
+  },
+  "mining_chest": {
+    "name": "Miner's Chest",
+    "contents": { "gold": 0, "items": [{ "item": "old_pickaxe", "amount": 1 }] }
   }
 }

@@ -13,16 +13,17 @@ import { isMoving } from "../player/movement.js";
 import { getClickMode } from "../core/clickMode.js";
 import { getEnemies, resetEnemy } from "../enemies/enemies.js";
 import { showMessage } from "../ui/messages.js";
-import { tickCooldowns } from "./techniques.js";
+import { tickCooldowns, tickBuffs } from "./techniques.js";
 import { state, isPlayerTurn, emitTurnUpdated, updateWaits } from "./combatState.js";
 import { getDistance } from "./combatRules.js";
 import { playerMove, openActionMenu } from "./playerActions.js";
 import { runEnemyTurn, setupEnemyTurns } from "./enemyTurn.js";
 import { setupReelIn } from "./reelIn.js";
+import { setupRockThrow } from "./rockThrow.js";
 import { endCombat } from "./combatEnd.js";
 
 export { isInCombat, isPlayerTurn, getCombatState, getReachableTiles } from "./combatState.js";
-export { useTechnique, canEatInCombat, playerJump } from "./playerActions.js";
+export { useTechnique, canEatInCombat, playerJump, getTechniqueBlock } from "./playerActions.js";
 
 const FLEE_DISTANCE = CHARACTER_DATA.combat.fleeDistance;
 const QUICK_SNACK = TECHNIQUES.quick_snack;
@@ -65,6 +66,7 @@ export function setupCombat(character) {
 
   setupEnemyTurns();
   setupReelIn();
+  setupRockThrow();
   addUpdate(updateCombat);
 }
 
@@ -179,6 +181,7 @@ function nextTurn() {
   combat.actionUsed = false;
   combat.busy = false;
   tickCooldowns(fighter);
+  tickBuffs(fighter);
   emit("turnStarted", { combatant: fighter, isPlayer: fighter === player, round: combat.round });
   emitTurnUpdated();
 

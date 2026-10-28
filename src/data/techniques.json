@@ -1,8 +1,5 @@
 {
-  "attack": {
-    "name": "Attack",
-    "pattern": []
-  },
+  "attack": { "name": "Attack", "pattern": [] },
   "cleave": {
     "name": "Cleave",
     "skill": "woodcutting",
@@ -37,6 +34,32 @@
     "level": 5,
     "passive": true,
     "xp": 5,
+    "pattern": []
+  },
+  "rock_throw": {
+    "name": "Rock Throw",
+    "skill": "mining",
+    "level": 5,
+    "tool": true,
+    "cooldown": 2,
+    "effect": "throw",
+    "range": 3,
+    "damage": 1.2,
+    "xp": 10,
+    "pattern": []
+  },
+  "sharpen": {
+    "name": "Sharpen",
+    "skill": "smithing",
+    "level": 5,
+    "cooldown": 4,
+    "free": true,
+    "effect": "buff",
+    "needsWeapon": true,
+    "consumes": "whetstone",
+    "buffTurns": 3,
+    "damageBonus": 0.5,
+    "xp": 10,
     "pattern": []
   }
 }

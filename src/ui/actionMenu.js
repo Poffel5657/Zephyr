@@ -4,8 +4,7 @@ import "./ui.css";
 import "./actionMenu.css";
 import { on } from "../core/eventBus.js";
 import { addUpdate } from "../core/loop.js";
-import { useTechnique, getCombatState } from "../combat/combat.js";
-import { getReelInBlock } from "../combat/reelIn.js";
+import { useTechnique, getCombatState, getTechniqueBlock } from "../combat/combat.js";
 import { getTechniques, getCooldown } from "../combat/techniques.js";
 import { placeOnScreen } from "./screenPosition.js";
 
@@ -33,7 +32,7 @@ export function createActionMenu(player, camera) {
     useTechnique(technique.id, enemy);
   };
 
-  // Warum die Technik gerade nicht geht (null = geht): Abklingzeit, Aktion schon verbraucht, Reel In nicht möglich
+  // Warum die Technik gerade nicht geht (null = geht): Abklingzeit, Aktion schon verbraucht, Sonder-Effekt nicht möglich
   const getBlock = (technique, enemy) => {
     if (getCooldown(player, technique.id) > 0) {
       return "Cooling down";
@@ -41,7 +40,7 @@ export function createActionMenu(player, camera) {
     if (getCombatState()?.actionUsed && !technique.free) {
       return "You already acted this turn";
     }
-    return technique.effect === "pull" ? getReelInBlock(player, enemy, technique) : null;
+    return technique.effect === undefined ? null : getTechniqueBlock(technique, enemy);
   };
 
   // Knöpfe neu bauen: "1 Attack", "2 Cleave (2)" (gesperrt = ausgegraut, Grund als Tooltip), dazu "Cancel"

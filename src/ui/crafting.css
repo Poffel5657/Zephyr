@@ -1,0 +1,84 @@
+/* Herstellungs-Fenster an einer Station (Lagerfeuer, Amboss), in der Mitte. */
+.crafting-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px;
+  box-sizing: border-box;
+  padding: 10px;
+  background-color: var(--ui-bg);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  user-select: none;
+  z-index: 40;
+}
+
+.crafting-hidden {
+  display: none;
+}
+
+.crafting-title {
+  color: var(--ui-accent);
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.crafting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.crafting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.crafting-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.crafting-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.crafting-needs {
+  font-size: 11px;
+  color: var(--ui-muted);
+}
+
+.crafting-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.crafting-actions .crafting-button {
+  flex: 1;
+}
+
+.crafting-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  background-color: var(--slot-bg);
+  color: var(--ui-text);
+  border: var(--ui-border);
+  border-radius: var(--ui-radius);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  cursor: pointer;
+}
+
